@@ -3,7 +3,7 @@ import path from 'path';
 
 // コピー元とコピー先のパスを設定
 const srcDir = path.resolve('dist');
-const destDir = path.resolve('android/app/src/main/assets/camera');
+const destDir = path.resolve('android/app/src/main/assets/privacy-camera');
 
 function copyRecursiveSync(src, dest) {
   const exists = fs.existsSync(src);

@@ -6,8 +6,8 @@ import basicSsl from '@vitejs/plugin-basic-ssl'
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   // 【重要】本番環境でのデプロイ先サブディレクトリを指定
-  // 例: アプリケーションが example.com/camera/ にデプロイされる場合
-  base: '/camera/',
+  // 例: アプリケーションが example.com/privacy-camera/ にデプロイされる場合
+  base: '/privacy-camera/',
 
   optimizeDeps: {
     exclude: ['zxing-wasm'] // Exclude the lib from pre-bundling if it handles wasm oddly
@@ -20,9 +20,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate', // 更新があったら即座に反映
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Simple Camera',
+        name: 'Privacy Camera',
         short_name: 'Camera',
-        description: 'Simple Camera App with Zoom and Recording',
+        description: 'Privacy Camera App with Zoom and Recording',
         theme_color: '#000000',
         background_color: '#000000',
         display: 'standalone', // アドレスバーを消す設定

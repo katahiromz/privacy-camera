@@ -423,7 +423,7 @@ class MainActivity : AppCompatActivity(), ValueCallback<String>, TextToSpeech.On
     private fun initWebViewClient() {
         // WebViewAssetLoaderを設定する。
         // ルートパス"/"をassetsフォルダにマップすることで、
-        // /camera/... のパスが assets/camera/... として解決される
+        // /privacy-camera/... のパスが assets/privacy-camera/... として解決される
         val assetLoader = WebViewAssetLoader.Builder()
             .setDomain("appassets.androidplatform.net")
             .addPathHandler("/", WebViewAssetLoader.AssetsPathHandler(this))
