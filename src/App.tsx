@@ -72,10 +72,10 @@ const initFaceDetection = async () => {
 
     // 顔認識成功時の処理
     faceDetection.onResults((results: FaceDetectionResults) => {
-      // 「一瞬、顔の個数が変わった」かつ「1秒以上経っていない」場合は更新しない
+      // 「一瞬、顔の個数が変わった」かつ「0.8秒以上経っていない」場合は更新しない
       let now = (new Date()).getTime();
       if (results.detections.length === lastFaceDetectCount ||
-          now >= lastFaceDetectTime + 1000)
+          now >= lastFaceDetectTime + 800)
       {
         if (!drawingFaceDetect) {
           lastFaceDetectCount = results.detections.length;
