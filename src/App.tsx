@@ -51,6 +51,10 @@ let drawingFaceDetect = false; // 顔認識描画中か？
 let detectedFaceInfo = [];
 const USE_FACE_DETECTION_LOCAL_FILE = false; // ローカルファイルを使って顔認識するか？(CDNを使用)
 const MIN_DETECTION_CONFIDENCE = 0.4;
+const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
+const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
+const RIGHT_EYE_RIGHT_CORNER = 263; // 右目の右端のランドマークインデックス
+const EYE_MASK_EXTENSION_COEFFICIENT = 0.1; // 黒目線の拡張係数
 
   // 顔認識成功時の処理
 const onDetectedFace = (results: FaceLandmarkerResult) => {
@@ -65,14 +69,14 @@ const onDetectedFace = (results: FaceLandmarkerResult) => {
   let newFaceInfo = [];
   if (results.faceLandmarks) {
     for (const landmarks of results.faceLandmarks) {
-      if (!landmarks || landmarks.length < 264) {
+      if (!landmarks || landmarks.length < MIN_FACE_LANDMARKS) {
         console.warn("insufficient landmarks");
         continue;
       }
 
       // Face Landmarkerのランドマーク: 33=左目の左端, 263=右目の右端
-      const leftEye = landmarks[33];  // 左目の左端
-      const rightEye = landmarks[263]; // 右目の右端
+      const leftEye = landmarks[LEFT_EYE_LEFT_CORNER];  // 左目の左端
+      const rightEye = landmarks[RIGHT_EYE_RIGHT_CORNER]; // 右目の右端
 
       newFaceInfo.push({leftEye, rightEye});
     }
@@ -144,8 +148,8 @@ const detectFaces = (data) => {
 
       // 目がすっぽり隠れるように微調整
       const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
-      let x0 = leftEyeX - dx * 0.1, y0 = leftEyeY - dy * 0.1;
-      let x1 = rightEyeX + dx * 0.1, y1 = rightEyeY + dy * 0.1;
+      let x0 = leftEyeX - dx * EYE_MASK_EXTENSION_COEFFICIENT, y0 = leftEyeY - dy * EYE_MASK_EXTENSION_COEFFICIENT;
+      let x1 = rightEyeX + dx * EYE_MASK_EXTENSION_COEFFICIENT, y1 = rightEyeY + dy * EYE_MASK_EXTENSION_COEFFICIENT;
       const norm = Math.sqrt(dx * dx + dy * dy);
 
       // 黒目線の描画
