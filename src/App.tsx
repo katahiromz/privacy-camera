@@ -4,7 +4,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CanvasWithWebcam03, { ImageProcessData } from './components/CanvasWithWebcam03';
 import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia,
-         getLocalDateTimeString, drawLineAsPolygon } from './libs/utils.ts';
+         getLocalDateTimeString, drawLineAsPolygon, cloneCanvas } from './libs/utils.ts';
 import { FaceDetection, Results as FaceDetectionResults } from '@mediapipe/face_detection';
 import './App.css';
 
@@ -25,10 +25,10 @@ const SHOW_CURRENT_TIME = false; // 現在の日時を表示するか？
 const BACKGROUND_IS_WHITE = false; // 背景は白か？
 
 // ダミー画像
-const dummyImageUrl = `${BASE_URL}example-qr-code.png`;
-//const dummyImageUrl = `${BASE_URL}dummy.jpg`;
-const USE_DUMMY_IMAGE = false;
-//const USE_DUMMY_IMAGE = true;
+//const dummyImageUrl = `${BASE_URL}example-qr-code.png`;
+const dummyImageUrl = `${BASE_URL}dummy.jpg`;
+//const USE_DUMMY_IMAGE = false;
+const USE_DUMMY_IMAGE = true;
 
 // 音声のURL
 const shutterSoundUrl = `${BASE_URL}ac-camera-shutter-sound.mp3`;
@@ -50,6 +50,7 @@ let lastFaceDetectTime = 0;
 let lastFaceDetectCount = 0;
 let drawingFaceDetect = false;
 let averageEyePositions = [];
+let clonedCanvas = null;
 
 const USE_FACE_DETECTION_LOCAL_FILE = true;
 
@@ -72,13 +73,13 @@ const initFaceDetection = async () => {
     
     faceDetection.onResults((results: FaceDetectionResults) => {
       let now = (new Date()).getTime();
-      if (results.detections.length == lastFaceDetectCount ||
+      if (results.detections.length === lastFaceDetectCount ||
           now >= lastFaceDetectTime + 1000)
       {
         if (!drawingFaceDetect) {
+          lastFaceDetectCount = results.detections.length;
           lastFaceResults = results;
           lastFaceDetectTime = now;
-          lastFaceDetectCount = results.detections.length;
         }
       } else {
         console.log(now, lastFaceDetectTime, lastFaceDetectCount);
@@ -153,7 +154,7 @@ const onImageProcess = async (data: ImageProcessData) => {
     try {
       // 3フレームに1回顔検出を実行（パフォーマンス最適化）
       frameCount++;
-      if (faceDetection && canvas && frameCount % 3 === 0) {
+      if (faceDetection && (frameCount % 3 === 0)) {
         faceDetection.send({ image: canvas }).catch((error) => {
           console.warn('Face detection failed:', error);
         });
@@ -168,7 +169,7 @@ const onImageProcess = async (data: ImageProcessData) => {
             console.warn("landmarks");
             continue;
           }
-          
+
           // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
           const rightEye = detection.landmarks[0]; // RIGHT_EYE
           const leftEye = detection.landmarks[1];  // LEFT_EYE
