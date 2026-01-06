@@ -57,7 +57,7 @@ const USE_FACE_DETECTION_LOCAL_FILE = true;
 // MediaPipe Face Detection のセットアップ
 const initFaceDetection = async () => {
   if (faceDetection || !ENABLE_FACE_DETECTION) return;
-  
+
   try {
     faceDetection = new FaceDetection({
       locateFile: (file) => {
@@ -65,12 +65,12 @@ const initFaceDetection = async () => {
           `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
       }
     });
-    
+
     faceDetection.setOptions({
       model: 'short_range',
       minDetectionConfidence: 0.3
     });
-    
+
     faceDetection.onResults((results: FaceDetectionResults) => {
       let now = (new Date()).getTime();
       if (results.detections.length === lastFaceDetectCount ||
@@ -85,7 +85,7 @@ const initFaceDetection = async () => {
         console.log(now, lastFaceDetectTime, lastFaceDetectCount);
       }
     });
-    
+
     await faceDetection.initialize();
   } catch (error) {
     console.warn('MediaPipe Face Detection initialization failed:', error);
@@ -173,33 +173,19 @@ const onImageProcess = async (data: ImageProcessData) => {
           // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
           const rightEye = detection.landmarks[0]; // RIGHT_EYE
           const leftEye = detection.landmarks[1];  // LEFT_EYE
-          
-          if (!rightEye || !leftEye) {
-            console.warn("!rightEye || !leftEye");
-            continue;
-          }
-          
-          // 正規化座標(0.0-1.0)をソース座標に変換
-          let rightEyeX = rightEye.x * width;
-          let rightEyeY = rightEye.y * height;
-          let leftEyeX = leftEye.x * width;
-          let leftEyeY = leftEye.y * height;
+          console.assert(leftEye);
+          console.assert(rightEye);
 
-          // 黒い線を描画（左目の左端から右目の右端）
-          // 鏡像の場合、左右が逆転しているので、座標の大小で判定
-          const leftMostX = Math.min(rightEyeX, leftEyeX);
-          const rightMostX = Math.max(rightEyeX, leftEyeX);
-          const leftMostY = rightEyeX < leftEyeX ? rightEyeY : leftEyeY;
-          const rightMostY = rightEyeX < leftEyeX ? leftEyeY : rightEyeY;
+          // 正規化座標(0.0-1.0)をソース座標に変換
+          let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
+          let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
 
           // 目がすっぽり隠れるように微調整
-          const dx = rightMostX - leftMostX, dy = rightMostY - leftMostY;
-          const norm = Math.sqrt(dx * dx + dy * dy);
-          let x0 = leftMostX - dx * 0.6;
-          let y0 = leftMostY - dy * 0.6;
-          let x1 = rightMostX + dx * 0.6;
-          let y1 = rightMostY + dy * 0.6;
+          const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
+          let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
+          let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
 
+          const norm = Math.sqrt(dx * dx + dy * dy);
           ctx.strokeStyle = '#000';
           ctx.lineWidth = norm * 0.8;
           ctx.lineCap = 'square';
