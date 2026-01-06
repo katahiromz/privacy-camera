@@ -3,7 +3,8 @@
 // License: MIT
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CanvasWithWebcam03, { ImageProcessData } from './components/CanvasWithWebcam03';
-import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia, getLocalDateTimeString } from './libs/utils.ts';
+import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia,
+         getLocalDateTimeString, drawLineAsPolygon } from './libs/utils.ts';
 import { FaceDetection, Results as FaceDetectionResults } from '@mediapipe/face_detection';
 import './App.css';
 
@@ -190,21 +191,26 @@ const onImageProcess = async (data: ImageProcessData) => {
             rightEyeX = width - rightEyeX;
             leftEyeX = width - leftEyeX;
           }
-          
+
           // 黒い線を描画（左目の左端から右目の右端）
           // 鏡像の場合、左右が逆転しているので、座標の大小で判定
           const leftMostX = Math.min(rightEyeX, leftEyeX);
           const rightMostX = Math.max(rightEyeX, leftEyeX);
           const leftMostY = rightEyeX < leftEyeX ? rightEyeY : leftEyeY;
           const rightMostY = rightEyeX < leftEyeX ? leftEyeY : rightEyeY;
-          
+
+          // 目がすっぽり隠れるように微調整
+          const dx = rightMostX - leftMostX, dy = rightMostY - leftMostY;
+          const norm = Math.sqrt(dx * dx + dy * dy);
+          const x0 = leftMostX - dx * 0.5;
+          const y0 = leftMostY - dy * 0.5;
+          const x1 = rightMostX + dx * 0.5;
+          const y1 = rightMostY + dy * 0.5;
+
           ctx.strokeStyle = '#000';
-          ctx.lineWidth = Math.max(3, minxy * 0.01);
-          ctx.lineCap = 'round';
-          ctx.beginPath();
-          ctx.moveTo(leftMostX, leftMostY);
-          ctx.lineTo(rightMostX, rightMostY);
-          ctx.stroke();
+          ctx.lineWidth = norm * 0.6;
+          ctx.lineCap = 'square';
+          drawLineAsPolygon(ctx, x0, y0, x1, y1);
         }
       }
     } catch (error) {
