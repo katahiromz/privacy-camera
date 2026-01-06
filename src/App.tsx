@@ -54,6 +54,8 @@ const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数
 const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
 const RIGHT_EYE_RIGHT_CORNER = 263; // 右目の右端のランドマークインデックス
 const EYE_MASK_EXTENSION_COEFFICIENT = 0.4; // 黒目線の拡張係数
+const FACE_PADDING_COEFFICIENT = 0.2; // 顔のパディング係数
+const BLACKOUT_LINE_WIDTH_COEFFICIENT = 0.1; // 黒塗りモードの線の幅係数
 const PRIVACY_MODE_KEY = 'privacyMode'; // localStorageのキー
 
 // MediaPipe Face Landmarker のセットアップ
@@ -277,7 +279,7 @@ function App() {
           }
           
           // 余白を追加
-          const padding = (maxX - minX) * 0.2;
+          const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
           minX = Math.max(0, minX - padding);
           minY = Math.max(0, minY - padding);
           maxX = Math.min(width, maxX + padding);
@@ -324,7 +326,7 @@ function App() {
           }
           
           // 余白を追加（faceBlurと同じパディング）
-          const padding = (maxX - minX) * 0.2;
+          const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
           minX = Math.max(0, minX - padding);
           minY = Math.max(0, minY - padding);
           maxX = Math.min(width, maxX + padding);
@@ -352,7 +354,7 @@ function App() {
           
           // 赤いX字の線を描画
           offscreenCtx.strokeStyle = '#f00';
-          offscreenCtx.lineWidth = Math.max(radiusX, radiusY) * 0.1; // 顔のサイズに比例した線の幅
+          offscreenCtx.lineWidth = Math.max(radiusX, radiusY) * BLACKOUT_LINE_WIDTH_COEFFICIENT; // 顔のサイズに比例した線の幅
           offscreenCtx.lineCap = 'round';
           
           // X字の対角線を描画
