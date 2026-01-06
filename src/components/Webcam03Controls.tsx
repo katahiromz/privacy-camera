@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 const SHOW_TAKE_PHOTO = true; // 写真撮影ボタンを表示するか？
 const SHOW_RECORDING = true; // 録画開始・録画停止ボタンを表示するか？
 const SHOW_CAMERA_SWITCH = true; // カメラ切り替えボタンを表示するか？
-const SHOW_CODE_READER = true; // コードリーダーを表示するか？
+const SHOW_CODE_READER = false; // コードリーダーを表示するか？
 
 // Controls コンポーネント
 interface Camera03ControlsProps {
