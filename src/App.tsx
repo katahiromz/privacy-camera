@@ -130,6 +130,7 @@ let faceDetectTime = 0; // 顔情報が更新された日時
 function App() {
   const { t } = useTranslation(); // 翻訳用
   const canvasWithCamera = useRef<CanvasWithWebcam03>(null);
+  const qrResultsRef = useRef([]); // QRコード読み取り結果（CanvasWithWebcam03に渡すため）
   
   // プライバシーモードの状態管理
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
@@ -277,11 +278,16 @@ function App() {
           const faceWidth = maxX - minX;
           const faceHeight = maxY - minY;
           
-          // 一時キャンバスを作成または再利用
-          if (!tempBlurCanvas || tempBlurCanvas.width < faceWidth || tempBlurCanvas.height < faceHeight) {
+          // 一時キャンバスを作成または再利用（メモリ効率のため、大きすぎる場合は再作成）
+          const MAX_TEMP_CANVAS_SIZE = 2000; // 最大サイズ（ピクセル）
+          if (!tempBlurCanvas || 
+              tempBlurCanvas.width < faceWidth || 
+              tempBlurCanvas.height < faceHeight ||
+              (tempBlurCanvas.width > MAX_TEMP_CANVAS_SIZE && faceWidth < MAX_TEMP_CANVAS_SIZE / 2) ||
+              (tempBlurCanvas.height > MAX_TEMP_CANVAS_SIZE && faceHeight < MAX_TEMP_CANVAS_SIZE / 2)) {
             tempBlurCanvas = document.createElement('canvas');
-            tempBlurCanvas.width = Math.ceil(faceWidth);
-            tempBlurCanvas.height = Math.ceil(faceHeight);
+            tempBlurCanvas.width = Math.ceil(Math.max(faceWidth, 100)); // 最小サイズを確保
+            tempBlurCanvas.height = Math.ceil(Math.max(faceHeight, 100));
           }
           const tempCtx = tempBlurCanvas.getContext('2d');
           
@@ -479,6 +485,7 @@ function App() {
         showConfig={SHOW_CONFIG}
         showCodeReader={false}
         doConfig={doConfig}
+        qrResultsRef={qrResultsRef}
         aria-label={t('camera_app')}
       />
     </>
