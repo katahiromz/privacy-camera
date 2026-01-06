@@ -180,38 +180,10 @@ const onImageProcess = async (data: ImageProcessData) => {
           }
           
           // 正規化座標(0.0-1.0)をソース座標に変換
-          let rightEyeX = rightEye.x * srcWidth;
-          let rightEyeY = rightEye.y * srcHeight;
-          let leftEyeX = leftEye.x * srcWidth;
-          let leftEyeY = leftEye.y * srcHeight;
-          
-          // ズームとオフセットを考慮した座標変換
-          if (currentZoom !== 1.0 || offset.x !== 0 || offset.y !== 0) {
-            const sourceWidth = srcWidth / currentZoom;
-            const sourceHeight = srcHeight / currentZoom;
-            const maxOffsetX = (srcWidth - sourceWidth) / 2;
-            const maxOffsetY = (srcHeight - sourceHeight) / 2;
-            const sourceX = maxOffsetX + offset.x;
-            const sourceY = maxOffsetY + offset.y;
-            
-            // ソース座標系からズーム後の座標系に変換
-            rightEyeX = (rightEyeX - sourceX) * currentZoom;
-            rightEyeY = (rightEyeY - sourceY) * currentZoom;
-            leftEyeX = (leftEyeX - sourceX) * currentZoom;
-            leftEyeY = (leftEyeY - sourceY) * currentZoom;
-          }
-          
-          // キャンバス座標に変換（スケーリング）
-          rightEyeX = (rightEyeX / srcWidth) * width;
-          rightEyeY = (rightEyeY / srcHeight) * height;
-          leftEyeX = (leftEyeX / srcWidth) * width;
-          leftEyeY = (leftEyeY / srcHeight) * height;
-          
-          // 鏡像モードの場合、座標を反転
-          if (isMirrored) {
-            rightEyeX = width - rightEyeX;
-            leftEyeX = width - leftEyeX;
-          }
+          let rightEyeX = rightEye.x * width;
+          let rightEyeY = rightEye.y * height;
+          let leftEyeX = leftEye.x * width;
+          let leftEyeY = leftEye.y * height;
 
           // 黒い線を描画（左目の左端から右目の右端）
           // 鏡像の場合、左右が逆転しているので、座標の大小で判定
