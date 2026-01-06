@@ -32,5 +32,10 @@
   "camera_copy": "コピー",
   "camera_cancel": "キャンセル",
   "camera_url_access": "URLを参照",
-  "camera_code_reader_starting": "QRコード読み取り準備中..."
+  "camera_code_reader_starting": "QRコード読み取り準備中...",
+  "settings_page": "設定",
+  "privacy_mode": "プライバシー モード",
+  "eye_mask": "黒目線",
+  "face_blur": "ぼかし",
+  "back": "戻る"
 }
