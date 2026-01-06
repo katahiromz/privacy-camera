@@ -45,8 +45,12 @@ polyfillGetUserMedia();
 // MediaPipe Face Detection の初期化
 let faceDetection: FaceDetection | null = null;
 let lastFaceResults: FaceDetectionResults | null = null;
-let isDetecting = false;
 let frameCount = 0;
+let lastFaceDetectTime = 0;
+let lastFaceDetectCount = 0;
+let drawingFaceDetect = false;
+let averageEyePositions = [];
+
 const USE_FACE_DETECTION_LOCAL_FILE = true;
 
 // MediaPipe Face Detection のセットアップ
@@ -63,12 +67,22 @@ const initFaceDetection = async () => {
     
     faceDetection.setOptions({
       model: 'short_range',
-      minDetectionConfidence: 0.5
+      minDetectionConfidence: 0.3
     });
     
     faceDetection.onResults((results: FaceDetectionResults) => {
-      lastFaceResults = results;
-      isDetecting = false;
+      let now = (new Date()).getTime();
+      if (results.detections.length == lastFaceDetectCount ||
+          now >= lastFaceDetectTime + 1000)
+      {
+        if (!drawingFaceDetect) {
+          lastFaceResults = results;
+          lastFaceDetectTime = now;
+          lastFaceDetectCount = results.detections.length;
+        }
+      } else {
+        console.log(now, lastFaceDetectTime, lastFaceDetectCount);
+      }
     });
     
     await faceDetection.initialize();
@@ -137,26 +151,32 @@ const onImageProcess = async (data: ImageProcessData) => {
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
     try {
-      // 2フレームに1回顔検出を実行（パフォーマンス最適化）
+      // 3フレームに1回顔検出を実行（パフォーマンス最適化）
       frameCount++;
-      if (faceDetection && video && frameCount % 2 === 0 && !isDetecting) {
-        isDetecting = true;
-        faceDetection.send({ image: video }).catch((error) => {
+      if (faceDetection && canvas && frameCount % 3 === 0) {
+        faceDetection.send({ image: canvas }).catch((error) => {
           console.warn('Face detection failed:', error);
-          isDetecting = false;
         });
       }
-      
+
       // 検出結果がある場合、黒い線(黒目線)を描画
+      drawingFaceDetect = true;
+      if (!lastFaceResults || !lastFaceResults.detections) console.log(123);
       if (lastFaceResults && lastFaceResults.detections) {
         for (const detection of lastFaceResults.detections) {
-          if (!detection.landmarks || detection.landmarks.length < 2) continue;
+          if (!detection.landmarks || detection.landmarks.length < 2) {
+            console.warn("landmarks");
+            continue;
+          }
           
           // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
           const rightEye = detection.landmarks[0]; // RIGHT_EYE
           const leftEye = detection.landmarks[1];  // LEFT_EYE
           
-          if (!rightEye || !leftEye) continue;
+          if (!rightEye || !leftEye) {
+            console.warn("!rightEye || !leftEye");
+            continue;
+          }
           
           // 正規化座標(0.0-1.0)をソース座標に変換
           let rightEyeX = rightEye.x * srcWidth;
@@ -202,17 +222,18 @@ const onImageProcess = async (data: ImageProcessData) => {
           // 目がすっぽり隠れるように微調整
           const dx = rightMostX - leftMostX, dy = rightMostY - leftMostY;
           const norm = Math.sqrt(dx * dx + dy * dy);
-          const x0 = leftMostX - dx * 0.5;
-          const y0 = leftMostY - dy * 0.5;
-          const x1 = rightMostX + dx * 0.5;
-          const y1 = rightMostY + dy * 0.5;
+          let x0 = leftMostX - dx * 0.6;
+          let y0 = leftMostY - dy * 0.6;
+          let x1 = rightMostX + dx * 0.6;
+          let y1 = rightMostY + dy * 0.6;
 
           ctx.strokeStyle = '#000';
-          ctx.lineWidth = norm * 0.6;
+          ctx.lineWidth = norm * 0.8;
           ctx.lineCap = 'square';
           drawLineAsPolygon(ctx, x0, y0, x1, y1);
         }
       }
+      drawingFaceDetect = false;
     } catch (error) {
       console.warn('Error during face detection:', error);
     }
