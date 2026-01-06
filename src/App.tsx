@@ -483,9 +483,7 @@ function App() {
         onImageProcess={onImageProcess}
         dummyImageSrc={ USE_DUMMY_IMAGE ? dummyImageUrl : null }
         showConfig={SHOW_CONFIG}
-        showCodeReader={false}
         doConfig={doConfig}
-        qrResultsRef={qrResultsRef}
         aria-label={t('camera_app')}
       />
     </>
