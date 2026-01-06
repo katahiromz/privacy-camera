@@ -4,7 +4,7 @@
 
 This app allows you to take photos or record video while overlaying a black eye line on the camera image.
 
-Facial recognition helps protect your privacy.
+Real-time facial recognition helps protect your privacy.
 
 ## How to Use
 
