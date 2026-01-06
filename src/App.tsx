@@ -136,7 +136,7 @@ function App() {
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
     try {
       const saved = localStorage.getItem(PRIVACY_MODE_KEY);
-      return (saved === 'eyeMask' || saved === 'faceBlur') ? saved : 'eyeMask';
+      return (saved === 'eyeMask' || saved === 'faceBlur' || saved === 'blackout') ? saved : 'eyeMask';
     } catch (error) {
       console.warn('localStorage not available:', error);
       return 'eyeMask';
@@ -310,6 +310,63 @@ function App() {
             offscreenCtx.drawImage(tempBlurCanvas, 0, 0, faceWidth, faceHeight, minX, minY, faceWidth, faceHeight);
             offscreenCtx.filter = 'none'; // フィルタをリセット
           }
+        } else if (currentPrivacyMode === 'blackout') {
+          // 黒塗りモード
+          // 顔全体の境界ボックスを計算
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const landmark of landmarks) {
+            const lx = landmark.x * width;
+            const ly = landmark.y * height;
+            minX = Math.min(minX, lx);
+            minY = Math.min(minY, ly);
+            maxX = Math.max(maxX, lx);
+            maxY = Math.max(maxY, ly);
+          }
+          
+          // 余白を追加（faceBlurと同じパディング）
+          const padding = (maxX - minX) * 0.2;
+          minX = Math.max(0, minX - padding);
+          minY = Math.max(0, minY - padding);
+          maxX = Math.min(width, maxX + padding);
+          maxY = Math.min(height, maxY + padding);
+          
+          // 楕円の中心座標とサイズを計算
+          const centerX = (minX + maxX) / 2;
+          const centerY = (minY + maxY) / 2;
+          const radiusX = (maxX - minX) / 2;
+          const radiusY = (maxY - minY) / 2;
+          
+          // 顔の角度を計算（目の位置から）
+          const dx = rightEyeX - leftEyeX;
+          const dy = rightEyeY - leftEyeY;
+          const angle = Math.atan2(dy, dx);
+          
+          // 黒い楕円を描画
+          offscreenCtx.save();
+          offscreenCtx.translate(centerX, centerY);
+          offscreenCtx.rotate(angle);
+          offscreenCtx.beginPath();
+          offscreenCtx.ellipse(0, 0, radiusX, radiusY, 0, 0, 2 * Math.PI);
+          offscreenCtx.fillStyle = '#000';
+          offscreenCtx.fill();
+          
+          // 赤いX字の線を描画
+          offscreenCtx.strokeStyle = '#f00';
+          offscreenCtx.lineWidth = Math.max(radiusX, radiusY) * 0.1; // 顔のサイズに比例した線の幅
+          offscreenCtx.lineCap = 'round';
+          
+          // X字の対角線を描画
+          offscreenCtx.beginPath();
+          offscreenCtx.moveTo(-radiusX, -radiusY);
+          offscreenCtx.lineTo(radiusX, radiusY);
+          offscreenCtx.stroke();
+          
+          offscreenCtx.beginPath();
+          offscreenCtx.moveTo(radiusX, -radiusY);
+          offscreenCtx.lineTo(-radiusX, radiusY);
+          offscreenCtx.stroke();
+          
+          offscreenCtx.restore();
         }
       }
     }

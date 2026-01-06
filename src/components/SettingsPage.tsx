@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { ArrowLeft } from 'lucide-react';
 import './SettingsPage.css';
 
-export type PrivacyMode = 'eyeMask' | 'faceBlur';
+export type PrivacyMode = 'eyeMask' | 'faceBlur' | 'blackout';
 
 interface SettingsPageProps {
   privacyMode: PrivacyMode;
@@ -19,7 +19,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    if (value === 'eyeMask' || value === 'faceBlur') {
+    if (value === 'eyeMask' || value === 'faceBlur' || value === 'blackout') {
       onPrivacyModeChange(value);
     }
   };
@@ -46,6 +46,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
           >
             <option value="eyeMask">{t('eye_mask')}</option>
             <option value="faceBlur">{t('face_blur')}</option>
+            <option value="blackout">{t('black_out')}</option>
           </select>
         </div>
       </div>
