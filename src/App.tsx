@@ -44,12 +44,39 @@ polyfillGetUserMedia();
 
 // MediaPipe Face Detection の初期化
 let faceDetection: FaceDetection | null = null;
-let lastFaceResults: FaceDetectionResults | null = null;
 let frameCount = 0; // フレーム カウンタ
 let lastFaceDetectTime = 0; // 前回顔認識したときの時刻
 let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
 let drawingFaceDetect = false; // 顔認識描画中か？
+let detectedFaceInfo = [];
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
+
+  // 顔認識成功時の処理
+const onDetectedFace = (results: FaceDetectionResults) => {
+  // 「一瞬、顔の個数が変わった」かつ「0.8秒以上経っていない」場合は更新しない
+  let now = (new Date()).getTime();
+  if (results.detections.length !== lastFaceDetectCount && now < lastFaceDetectTime + 800)
+    return;
+
+  if (drawingFaceDetect) return;
+
+  detectedFaceInfo = []
+  for (const detection of results.detections) {
+    if (!detection.landmarks || detection.landmarks.length < 2) {
+      console.warn("landmarks");
+      continue;
+    }
+
+    // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
+    const rightEye = detection.landmarks[0]; // RIGHT_EYE
+    const leftEye = detection.landmarks[1];  // LEFT_EYE
+
+    detectedFaceInfo.push({leftEye, rightEye});
+  }
+
+  lastFaceDetectCount = results.detections.length;
+  lastFaceDetectTime = now;
+};
 
 // MediaPipe Face Detection のセットアップ
 const initFaceDetection = async () => {
@@ -68,19 +95,8 @@ const initFaceDetection = async () => {
       minDetectionConfidence: 0.3
     });
 
-    // 顔認識成功時の処理
     faceDetection.onResults((results: FaceDetectionResults) => {
-      // 「一瞬、顔の個数が変わった」かつ「0.8秒以上経っていない」場合は更新しない
-      let now = (new Date()).getTime();
-      if (results.detections.length === lastFaceDetectCount ||
-          now >= lastFaceDetectTime + 800)
-      {
-        if (!drawingFaceDetect) {
-          lastFaceDetectCount = results.detections.length;
-          lastFaceResults = results;
-          lastFaceDetectTime = now;
-        }
-      }
+      onDetectedFace(results);
     });
 
     await faceDetection.initialize();
@@ -110,33 +126,24 @@ const detectFaces = (data) => {
 
     // 検出結果がある場合、黒い線(黒目線)を描画
     drawingFaceDetect = true;
-    if (lastFaceResults && lastFaceResults.detections) {
-      for (const detection of lastFaceResults.detections) {
-        if (!detection.landmarks || detection.landmarks.length < 2) {
-          console.warn("landmarks");
-          continue;
-        }
+    for (const info of detectedFaceInfo) {
+      const {leftEye, rightEye} = info;
 
-        // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
-        const rightEye = detection.landmarks[0]; // RIGHT_EYE
-        const leftEye = detection.landmarks[1];  // LEFT_EYE
+      // 正規化座標(0.0-1.0)をソース座標に変換
+      let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
+      let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
 
-        // 正規化座標(0.0-1.0)をソース座標に変換
-        let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
-        let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
+      // 目がすっぽり隠れるように微調整
+      const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
+      let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
+      let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
+      const norm = Math.sqrt(dx * dx + dy * dy);
 
-        // 目がすっぽり隠れるように微調整
-        const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
-        let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
-        let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
-
-        // 黒目線の描画
-        const norm = Math.sqrt(dx * dx + dy * dy);
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = norm * 0.8; // 線の幅
-        ctx.lineCap = 'square';
-        drawLineAsPolygon(ctx, x0, y0, x1, y1);
-      }
+      // 黒目線の描画
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = norm * 0.8; // 線の幅
+      ctx.lineCap = 'square';
+      drawLineAsPolygon(ctx, x0, y0, x1, y1);
     }
     drawingFaceDetect = false;
   } catch (error) {
