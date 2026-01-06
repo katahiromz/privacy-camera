@@ -45,6 +45,7 @@ polyfillGetUserMedia();
 // MediaPipe Face Landmarker の初期化
 let faceLandmarker: FaceLandmarker | null = null;
 let frameCount = 0; // フレーム カウンタ
+let offscreenCanvas: HTMLCanvasElement | null = null; // オフスクリーンキャンバス
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
 const MIN_DETECTION_CONFIDENCE = 0.4;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
@@ -127,10 +128,12 @@ const onImageProcess = async (data: ImageProcessData) => {
 
   if (!ctx || width <= 0 || height <= 0) return;
 
-  // オフスクリーンキャンバスを作成
-  let offscreenCanvas = document.createElement('canvas');
-  offscreenCanvas.width = canvas.width;
-  offscreenCanvas.height = canvas.height;
+  // オフスクリーンキャンバスを作成または再利用
+  if (!offscreenCanvas || offscreenCanvas.width !== canvas.width || offscreenCanvas.height !== canvas.height) {
+    offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+  }
   const offscreenCtx = offscreenCanvas.getContext('2d',
     { alpha: false, desynchronized: true, willReadFrequently: false }
   );
