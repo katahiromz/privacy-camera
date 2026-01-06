@@ -41,7 +41,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
           <label htmlFor="privacy-mode">{t('privacy_mode')}</label>
           <select 
             id="privacy-mode" 
-            value={privacyMode} 
+            value={privacyMode}
             onChange={handleModeChange}
           >
             <option value="eyeMask">{t('eye_mask')}</option>
