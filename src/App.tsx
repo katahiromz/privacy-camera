@@ -142,7 +142,13 @@ function App() {
       return 'eyeMask';
     }
   });
-  
+
+  // プライバシーモードのRefを作成して常に最新の値を参照
+  const privacyModeRef = useRef(privacyMode);
+  useEffect(() => {
+    privacyModeRef.current = privacyMode;
+  }, [privacyMode]);
+
   // 設定ページの表示状態
   const [showSettings, setShowSettings] = useState(false);
   
@@ -158,7 +164,7 @@ function App() {
 
   // 画像処理関数
   const onImageProcess = useCallback(async (data: ImageProcessData) => {
-    const { x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
+    const { x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes } = data;
     const ctx = canvas.getContext('2d',
       { alpha: false, desynchronized: true, willReadFrequently: false } // 速度優先
     );
@@ -242,7 +248,9 @@ function App() {
         let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
         let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
 
-        if (privacyMode === 'eyeMask') {
+        // 最新のprivacyModeを取得
+        const currentPrivacyMode = privacyModeRef.current;
+        if (currentPrivacyMode === 'eyeMask') {
           // 黒目線モード
           // 目がすっぽり隠れるように微調整
           const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
@@ -255,7 +263,7 @@ function App() {
           offscreenCtx.lineWidth = norm * 0.8; // 線の幅
           offscreenCtx.lineCap = 'square';
           drawLineAsPolygon(offscreenCtx, x0, y0, x1, y1);
-        } else if (privacyMode === 'faceBlur') {
+        } else if (currentPrivacyMode === 'faceBlur') {
           // 顔ぼかしモード
           // 顔全体の境界ボックスを計算
           let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -321,7 +329,7 @@ function App() {
 
     // オフスクリーンキャンバスからメインキャンバスに転送
     ctx.drawImage(offscreenCanvas, 0, 0);
-  }, [privacyMode]);
+  }, []);
 
   // 設定をする
   const doConfig = () => {
