@@ -49,7 +49,7 @@ let lastFaceDetectTime = 0; // 前回顔認識したときの時刻
 let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
 let drawingFaceDetect = false; // 顔認識描画中か？
 let detectedFaceInfo = [];
-const USE_FACE_DETECTION_LOCAL_FILE = false; // ローカルファイルを使って顔認識するか？(CDNを使用)
+const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
 const MIN_DETECTION_CONFIDENCE = 0.4;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
 const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
@@ -103,8 +103,8 @@ const initFaceDetection = async () => {
           "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
         delegate: "GPU"
       },
-      runningMode: "VIDEO",
-      numFaces: 5,
+      runningMode: "IMAGE",
+      numFaces: 16,
       minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
       outputFaceBlendshapes: false,
       outputFacialTransformationMatrixes: false
@@ -129,7 +129,7 @@ const detectFaces = (data) => {
     frameCount++;
     if (faceLandmarker && (frameCount % 1 === 0)) {
       const timestamp = performance.now();
-      const results = faceLandmarker.detectForVideo(canvas, timestamp);
+      const results = faceLandmarker.detect(canvas);
       onDetectedFace(results);
     }
 
