@@ -82,8 +82,6 @@ const initFaceDetection = async () => {
           lastFaceResults = results;
           lastFaceDetectTime = now;
         }
-      } else {
-        console.log(now, lastFaceDetectTime, lastFaceDetectCount);
       }
     });
 
@@ -114,7 +112,6 @@ const detectFaces = (data) => {
 
     // 検出結果がある場合、黒い線(黒目線)を描画
     drawingFaceDetect = true;
-    if (!lastFaceResults || !lastFaceResults.detections) console.log(123);
     if (lastFaceResults && lastFaceResults.detections) {
       for (const detection of lastFaceResults.detections) {
         if (!detection.landmarks || detection.landmarks.length < 2) {
