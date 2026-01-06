@@ -3,7 +3,7 @@
 // License: MIT
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import './SettingsPage.css';
 
 export type PrivacyMode = 'eyeMask' | 'faceBlur';
@@ -32,7 +32,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
           onClick={onBack}
           aria-label={t('back')}
         >
-          <X size={24} />
+          <ArrowLeft size={24} />
         </button>
         <h1>{t('settings_page')}</h1>
       </div>
