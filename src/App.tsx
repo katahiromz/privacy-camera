@@ -51,7 +51,7 @@ const MIN_DETECTION_CONFIDENCE = 0.4;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
 const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
 const RIGHT_EYE_RIGHT_CORNER = 263; // 右目の右端のランドマークインデックス
-const EYE_MASK_EXTENSION_COEFFICIENT = 0.1; // 黒目線の拡張係数
+const EYE_MASK_EXTENSION_COEFFICIENT = 0.4; // 黒目線の拡張係数
 
 // MediaPipe Face Landmarker のセットアップ
 const initFaceDetection = async () => {
@@ -94,7 +94,7 @@ const detectFaces = (canvas: HTMLCanvasElement) => {
     if (faceLandmarker && (frameCount % 1 === 0)) {
       const timestamp = performance.now();
       const results = faceLandmarker.detectForVideo(canvas, timestamp);
-      
+
       let faceInfo = [];
       if (results.faceLandmarks) {
         for (const landmarks of results.faceLandmarks) {
@@ -118,6 +118,10 @@ const detectFaces = (canvas: HTMLCanvasElement) => {
     return [];
   }
 };
+
+let oldFaceCount = 0; // 古い顔の個数
+let oldFaceInfo = null; // 古い顔情報
+let faceDetectTime = 0; // 顔情報が更新された日時
 
 // 画像処理関数
 const onImageProcess = async (data: ImageProcessData) => {
@@ -184,8 +188,19 @@ const onImageProcess = async (data: ImageProcessData) => {
   let avgxy = (width + height) / 2;
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
-    const faceInfo = detectFaces(offscreenCanvas);
-    
+    let faceInfo = detectFaces(offscreenCanvas);
+    const now = performance.now();
+
+    if (faceInfo.length !== oldFaceCount && now < faceDetectTime + 500) {
+      // 急に顔の数が変わったときは、しばらく古い情報を信用する
+      faceInfo = oldFaceInfo;
+    } else {
+      // 顔の個数が同じか、時間が経ったら新しい情報を信用する
+      oldFaceInfo = faceInfo;
+      oldFaceCount = faceInfo.length;
+      faceDetectTime = now;
+    }
+
     // 検出結果がある場合、黒い線(黒目線)を描画
     for (const info of faceInfo) {
       const {leftEye, rightEye} = info;
