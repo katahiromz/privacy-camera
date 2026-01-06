@@ -46,6 +46,7 @@ let faceDetection: FaceDetection | null = null;
 let lastFaceResults: FaceDetectionResults | null = null;
 let isDetecting = false;
 let frameCount = 0;
+const USE_FACE_DETECTION_LOCAL_FILE = true;
 
 // MediaPipe Face Detection のセットアップ
 const initFaceDetection = async () => {
@@ -54,7 +55,8 @@ const initFaceDetection = async () => {
   try {
     faceDetection = new FaceDetection({
       locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+        return USE_FACE_DETECTION_LOCAL_FILE ? `${BASE_URL}${file}` :
+          `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
       }
     });
     
