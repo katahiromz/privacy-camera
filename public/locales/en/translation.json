@@ -32,5 +32,10 @@
   "camera_copy": "Copy",
   "camera_cancel": "Cancel",
   "camera_url_access": "Refer to URL",
-  "camera_code_reader_starting": "Starting QR code reader..."
+  "camera_code_reader_starting": "Starting QR code reader...",
+  "settings_page": "Settings",
+  "privacy_mode": "Privacy Mode",
+  "eye_mask": "Eye Mask",
+  "face_blur": "Face Blur",
+  "back": "Back"
 }
