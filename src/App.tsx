@@ -51,7 +51,6 @@ let lastFaceDetectCount = 0;
 let drawingFaceDetect = false;
 let averageEyePositions = [];
 let clonedCanvas = null;
-
 const USE_FACE_DETECTION_LOCAL_FILE = true;
 
 // MediaPipe Face Detection のセットアップ
@@ -71,7 +70,9 @@ const initFaceDetection = async () => {
       minDetectionConfidence: 0.3
     });
 
+    // 顔認識成功時の処理
     faceDetection.onResults((results: FaceDetectionResults) => {
+      // 「一瞬、顔の個数が変わった」かつ「1秒以上経っていない」場合は更新しない
       let now = (new Date()).getTime();
       if (results.detections.length === lastFaceDetectCount ||
           now >= lastFaceDetectTime + 1000)
@@ -136,6 +137,7 @@ const detectFaces = (data) => {
         let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
         let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
 
+        // 黒目線の描画
         const norm = Math.sqrt(dx * dx + dy * dy);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = norm * 0.8;
