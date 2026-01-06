@@ -135,7 +135,7 @@ const onImageProcess = async (data: ImageProcessData) => {
     offscreenCanvas.height = canvas.height;
   }
   const offscreenCtx = offscreenCanvas.getContext('2d',
-    { alpha: false, desynchronized: true, willReadFrequently: false }
+    { alpha: false, willReadFrequently: false }
   );
 
   if (!offscreenCtx) return;
