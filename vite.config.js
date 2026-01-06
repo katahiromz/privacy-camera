@@ -24,7 +24,7 @@ export default defineConfig(({ mode }) => ({
       },
       manifest: {
         name: 'Privacy Camera',
-        short_name: 'Camera',
+        short_name: 'Privacy Camera',
         description: 'Privacy Camera App with Zoom and Recording',
         theme_color: '#000000',
         background_color: '#000000',
