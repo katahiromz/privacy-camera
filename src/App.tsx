@@ -47,6 +47,7 @@ polyfillGetUserMedia();
 let faceLandmarker: FaceLandmarker | null = null;
 let frameCount = 0; // フレーム カウンタ
 let offscreenCanvas: HTMLCanvasElement | null = null; // オフスクリーンキャンバス
+let tempBlurCanvas: HTMLCanvasElement | null = null; // ぼかし用の一時キャンバス
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
 const MIN_DETECTION_CONFIDENCE = 0.4;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
@@ -132,8 +133,13 @@ function App() {
   
   // プライバシーモードの状態管理
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
-    const saved = localStorage.getItem(PRIVACY_MODE_KEY);
-    return (saved === 'eyeMask' || saved === 'faceBlur') ? saved : 'eyeMask';
+    try {
+      const saved = localStorage.getItem(PRIVACY_MODE_KEY);
+      return (saved === 'eyeMask' || saved === 'faceBlur') ? saved : 'eyeMask';
+    } catch (error) {
+      console.warn('localStorage not available:', error);
+      return 'eyeMask';
+    }
   });
   
   // 設定ページの表示状態
@@ -142,7 +148,11 @@ function App() {
   // プライバシーモード変更時の処理
   const handlePrivacyModeChange = (mode: PrivacyMode) => {
     setPrivacyMode(mode);
-    localStorage.setItem(PRIVACY_MODE_KEY, mode);
+    try {
+      localStorage.setItem(PRIVACY_MODE_KEY, mode);
+    } catch (error) {
+      console.warn('localStorage not available:', error);
+    }
   };
 
   // 画像処理関数
@@ -267,19 +277,23 @@ function App() {
           const faceWidth = maxX - minX;
           const faceHeight = maxY - minY;
           
-          // 一時キャンバスに顔領域を抽出
-          const tempCanvas = document.createElement('canvas');
-          tempCanvas.width = faceWidth;
-          tempCanvas.height = faceHeight;
-          const tempCtx = tempCanvas.getContext('2d');
+          // 一時キャンバスを作成または再利用
+          if (!tempBlurCanvas || tempBlurCanvas.width < faceWidth || tempBlurCanvas.height < faceHeight) {
+            tempBlurCanvas = document.createElement('canvas');
+            tempBlurCanvas.width = Math.ceil(faceWidth);
+            tempBlurCanvas.height = Math.ceil(faceHeight);
+          }
+          const tempCtx = tempBlurCanvas.getContext('2d');
           
           if (tempCtx) {
+            // 一時キャンバスをクリア
+            tempCtx.clearRect(0, 0, faceWidth, faceHeight);
             // 顔領域をコピー
             tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
             
             // ぼかしフィルタを適用
             offscreenCtx.filter = 'blur(20px)';
-            offscreenCtx.drawImage(tempCanvas, 0, 0, faceWidth, faceHeight, minX, minY, faceWidth, faceHeight);
+            offscreenCtx.drawImage(tempBlurCanvas, 0, 0, faceWidth, faceHeight, minX, minY, faceWidth, faceHeight);
             offscreenCtx.filter = 'none'; // フィルタをリセット
           }
         }

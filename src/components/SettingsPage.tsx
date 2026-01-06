@@ -18,7 +18,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
   const { t } = useTranslation();
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onPrivacyModeChange(e.target.value as PrivacyMode);
+    const value = e.target.value;
+    if (value === 'eyeMask' || value === 'faceBlur') {
+      onPrivacyModeChange(value);
+    }
   };
 
   return (
