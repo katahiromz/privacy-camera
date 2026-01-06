@@ -293,7 +293,7 @@ function App() {
           
           if (tempCtx) {
             // 一時キャンバスをクリア
-            tempCtx.clearRect(0, 0, faceWidth, faceHeight);
+            tempCtx.clearRect(0, 0, tempBlurCanvas.width, tempBlurCanvas.height);
             // 顔領域をコピー
             tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
             
