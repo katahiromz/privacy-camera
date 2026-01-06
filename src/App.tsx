@@ -45,13 +45,11 @@ polyfillGetUserMedia();
 // MediaPipe Face Detection の初期化
 let faceDetection: FaceDetection | null = null;
 let lastFaceResults: FaceDetectionResults | null = null;
-let frameCount = 0;
-let lastFaceDetectTime = 0;
-let lastFaceDetectCount = 0;
-let drawingFaceDetect = false;
-let averageEyePositions = [];
-let clonedCanvas = null;
-const USE_FACE_DETECTION_LOCAL_FILE = true;
+let frameCount = 0; // フレーム カウンタ
+let lastFaceDetectTime = 0; // 前回顔認識したときの時刻
+let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
+let drawingFaceDetect = false; // 顔認識描画中か？
+const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
 
 // MediaPipe Face Detection のセットアップ
 const initFaceDetection = async () => {
@@ -122,8 +120,6 @@ const detectFaces = (data) => {
         // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
         const rightEye = detection.landmarks[0]; // RIGHT_EYE
         const leftEye = detection.landmarks[1];  // LEFT_EYE
-        console.assert(leftEye);
-        console.assert(rightEye);
 
         // 正規化座標(0.0-1.0)をソース座標に変換
         let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
@@ -137,7 +133,7 @@ const detectFaces = (data) => {
         // 黒目線の描画
         const norm = Math.sqrt(dx * dx + dy * dy);
         ctx.strokeStyle = '#000';
-        ctx.lineWidth = norm * 0.8;
+        ctx.lineWidth = norm * 0.8; // 線の幅
         ctx.lineCap = 'square';
         drawLineAsPolygon(ctx, x0, y0, x1, y1);
       }
