@@ -45,47 +45,12 @@ polyfillGetUserMedia();
 // MediaPipe Face Landmarker の初期化
 let faceLandmarker: FaceLandmarker | null = null;
 let frameCount = 0; // フレーム カウンタ
-let lastFaceDetectTime = 0; // 前回顔認識したときの時刻
-let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
-let drawingFaceDetect = false; // 顔認識描画中か？
-let detectedFaceInfo = [];
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
 const MIN_DETECTION_CONFIDENCE = 0.4;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
 const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
 const RIGHT_EYE_RIGHT_CORNER = 263; // 右目の右端のランドマークインデックス
 const EYE_MASK_EXTENSION_COEFFICIENT = 0.1; // 黒目線の拡張係数
-
-  // 顔認識成功時の処理
-const onDetectedFace = (results: FaceLandmarkerResult) => {
-  // 「一瞬、顔の個数が変わった」かつ「0.8秒以上経っていない」場合は更新しない
-  let now = (new Date()).getTime();
-  const faceCount = results.faceLandmarks ? results.faceLandmarks.length : 0;
-  if (faceCount !== lastFaceDetectCount && now < lastFaceDetectTime + 800)
-    return;
-
-  if (drawingFaceDetect) return;
-
-  let newFaceInfo = [];
-  if (results.faceLandmarks) {
-    for (const landmarks of results.faceLandmarks) {
-      if (!landmarks || landmarks.length < MIN_FACE_LANDMARKS) {
-        console.warn("insufficient landmarks");
-        continue;
-      }
-
-      // Face Landmarkerのランドマーク: 33=左目の左端, 263=右目の右端
-      const leftEye = landmarks[LEFT_EYE_LEFT_CORNER];  // 左目の左端
-      const rightEye = landmarks[RIGHT_EYE_RIGHT_CORNER]; // 右目の右端
-
-      newFaceInfo.push({leftEye, rightEye});
-    }
-  }
-  detectedFaceInfo = newFaceInfo;
-
-  lastFaceDetectCount = faceCount;
-  lastFaceDetectTime = now;
-};
 
 // MediaPipe Face Landmarker のセットアップ
 const initFaceDetection = async () => {
@@ -103,7 +68,7 @@ const initFaceDetection = async () => {
           "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
         delegate: "GPU"
       },
-      runningMode: "IMAGE",
+      runningMode: "VIDEO",
       numFaces: 16,
       minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
       outputFaceBlendshapes: false,
@@ -121,47 +86,35 @@ if (ENABLE_FACE_DETECTION) {
 }
 
 // 顔認識をする
-const detectFaces = (data) => {
-  const { ctx, x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
-
+const detectFaces = (canvas: HTMLCanvasElement) => {
   try {
     // 1フレームに1回顔検出を実行（パフォーマンス最適化）
     frameCount++;
     if (faceLandmarker && (frameCount % 1 === 0)) {
       const timestamp = performance.now();
-      const results = faceLandmarker.detect(canvas);
-      onDetectedFace(results);
+      const results = faceLandmarker.detectForVideo(canvas, timestamp);
+      
+      let faceInfo = [];
+      if (results.faceLandmarks) {
+        for (const landmarks of results.faceLandmarks) {
+          if (!landmarks || landmarks.length < MIN_FACE_LANDMARKS) {
+            console.warn("insufficient landmarks");
+            continue;
+          }
+
+          // Face Landmarkerのランドマーク: 33=左目の左端, 263=右目の右端
+          const leftEye = landmarks[LEFT_EYE_LEFT_CORNER];  // 左目の左端
+          const rightEye = landmarks[RIGHT_EYE_RIGHT_CORNER]; // 右目の右端
+
+          faceInfo.push({leftEye, rightEye});
+        }
+      }
+      return faceInfo;
     }
-
-    drawingFaceDetect = true;
-
-    // 現在保持している情報をコピーして使用（描画中の書き換え対策）
-    const facesToDraw = [...detectedFaceInfo];
-
-    // 検出結果がある場合、黒い線(黒目線)を描画
-    for (const info of facesToDraw) {
-      const {leftEye, rightEye} = info;
-
-      // 正規化座標(0.0-1.0)をソース座標に変換
-      let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
-      let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
-
-      // 目がすっぽり隠れるように微調整
-      const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
-      let x0 = leftEyeX - dx * EYE_MASK_EXTENSION_COEFFICIENT, y0 = leftEyeY - dy * EYE_MASK_EXTENSION_COEFFICIENT;
-      let x1 = rightEyeX + dx * EYE_MASK_EXTENSION_COEFFICIENT, y1 = rightEyeY + dy * EYE_MASK_EXTENSION_COEFFICIENT;
-      const norm = Math.sqrt(dx * dx + dy * dy);
-
-      // 黒目線の描画
-      ctx.strokeStyle = '#000';
-      ctx.lineWidth = norm * 0.8; // 線の幅
-      ctx.lineCap = 'square';
-      drawLineAsPolygon(ctx, x0, y0, x1, y1);
-    }
-
-    drawingFaceDetect = false;
+    return [];
   } catch (error) {
     console.warn('Error during face detection:', error);
+    return [];
   }
 };
 
@@ -174,19 +127,29 @@ const onImageProcess = async (data: ImageProcessData) => {
 
   if (!ctx || width <= 0 || height <= 0) return;
 
+  // オフスクリーンキャンバスを作成
+  let offscreenCanvas = document.createElement('canvas');
+  offscreenCanvas.width = canvas.width;
+  offscreenCanvas.height = canvas.height;
+  const offscreenCtx = offscreenCanvas.getContext('2d',
+    { alpha: false, desynchronized: true, willReadFrequently: false }
+  );
+
+  if (!offscreenCtx) return;
+
   // 鏡像なら左右反転の座標変換
   if (isMirrored) {
-    ctx.translate(width, 0);
-    ctx.scale(-1, 1);
+    offscreenCtx.translate(width, 0);
+    offscreenCtx.scale(-1, 1);
   }
 
   if (currentZoom !== 1.0 || offset.x != 0 || offset.y != 0) {
     // 背景を塗りつぶす
     if (BACKGROUND_IS_WHITE) {
-      ctx.fillStyle = 'white';
-      ctx.fillRect(x, y, width, height);
+      offscreenCtx.fillStyle = 'white';
+      offscreenCtx.fillRect(x, y, width, height);
     } else {
-      ctx.clearRect(x, y, width, height);
+      offscreenCtx.clearRect(x, y, width, height);
     }
 
     // ズーム前のソースのサイズ
@@ -202,37 +165,61 @@ const onImageProcess = async (data: ImageProcessData) => {
     const sourceY = maxOffsetY + offset.y;
 
     // イメージを拡大縮小して転送
-    ctx.drawImage(
+    offscreenCtx.drawImage(
       src, Math.round(sourceX), Math.round(sourceY), sourceWidth, sourceHeight,
       x, y, width, height
     );
   } else {
     // ズームなし、パンなし
-    ctx.drawImage(src, x, y, width, height);
+    offscreenCtx.drawImage(src, x, y, width, height);
   }
 
-  ctx.setTransform(1, 0, 0, 1, 0, 0); // 座標変換を元に戻す
+  offscreenCtx.setTransform(1, 0, 0, 1, 0, 0); // 座標変換を元に戻す
 
   let minxy = Math.min(width, height);
   let maxxy = Math.max(width, height);
   let avgxy = (width + height) / 2;
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
-    detectFaces({...data, ctx});
+    const faceInfo = detectFaces(offscreenCanvas);
+    
+    // 検出結果がある場合、黒い線(黒目線)を描画
+    for (const info of faceInfo) {
+      const {leftEye, rightEye} = info;
+
+      // 正規化座標(0.0-1.0)をソース座標に変換
+      let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
+      let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
+
+      // 目がすっぽり隠れるように微調整
+      const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
+      let x0 = leftEyeX - dx * EYE_MASK_EXTENSION_COEFFICIENT, y0 = leftEyeY - dy * EYE_MASK_EXTENSION_COEFFICIENT;
+      let x1 = rightEyeX + dx * EYE_MASK_EXTENSION_COEFFICIENT, y1 = rightEyeY + dy * EYE_MASK_EXTENSION_COEFFICIENT;
+      const norm = Math.sqrt(dx * dx + dy * dy);
+
+      // 黒目線の描画
+      offscreenCtx.strokeStyle = '#000';
+      offscreenCtx.lineWidth = norm * 0.8; // 線の幅
+      offscreenCtx.lineCap = 'square';
+      drawLineAsPolygon(offscreenCtx, x0, y0, x1, y1);
+    }
   }
 
   if (SHOW_CURRENT_TIME) { // ちょっと日時を描画してみるか？
     let text = getLocalDateTimeString();
-    ctx.font = `${minxy * 0.05}px monospace, san-serif`;
-    let measure = ctx.measureText(text);
+    offscreenCtx.font = `${minxy * 0.05}px monospace, san-serif`;
+    let measure = offscreenCtx.measureText(text);
     const margin = minxy * 0.015;
     let x0 = x + width - measure.width - margin, y0 = height - margin;
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = minxy * 0.01;
-    ctx.strokeText(text, x0, y0);
-    ctx.fillStyle = "#0f0";
-    ctx.fillText(text, x0, y0);
+    offscreenCtx.strokeStyle = "#000";
+    offscreenCtx.lineWidth = minxy * 0.01;
+    offscreenCtx.strokeText(text, x0, y0);
+    offscreenCtx.fillStyle = "#0f0";
+    offscreenCtx.fillText(text, x0, y0);
   }
+
+  // オフスクリーンキャンバスからメインキャンバスに転送
+  ctx.drawImage(offscreenCanvas, 0, 0);
 };
 
 // アプリ
