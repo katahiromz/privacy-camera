@@ -99,7 +99,7 @@ if (ENABLE_FACE_DETECTION) {
 }
 
 // 顔認識をする
-const doFaceDetection = (data) => {
+const detectFaces = (data) => {
   const { ctx, x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
 
   try {
@@ -202,7 +202,7 @@ const onImageProcess = async (data: ImageProcessData) => {
   let avgxy = (width + height) / 2;
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
-    doFaceDetection({...data, ctx});
+    detectFaces({...data, ctx});
   }
 
   if (SHOW_CURRENT_TIME) { // ちょっと日時を描画してみるか？
