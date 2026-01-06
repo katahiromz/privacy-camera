@@ -27,8 +27,8 @@ const BACKGROUND_IS_WHITE = false; // 背景は白か？
 
 // ダミー画像
 const dummyImageUrl = `${BASE_URL}dummy.jpg`;
-//const USE_DUMMY_IMAGE = false;
-const USE_DUMMY_IMAGE = true;
+const USE_DUMMY_IMAGE = false;
+//const USE_DUMMY_IMAGE = true;
 
 // 音声のURL
 const shutterSoundUrl = `${BASE_URL}ac-camera-shutter-sound.mp3`;
@@ -77,7 +77,10 @@ const initFaceDetection = async () => {
       numFaces: 16,
       minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
       outputFaceBlendshapes: false,
-      outputFacialTransformationMatrixes: false
+      outputFacialTransformationMatrixes: false,
+      min_face_detection_confidence: 0.1,
+      min_face_presence_confidence: 0.1,
+      min_tracking_confidence: 0.1,
     });
   } catch (error) {
     console.warn('MediaPipe Face Landmarker initialization failed:', error);

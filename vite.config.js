@@ -57,14 +57,14 @@ export default defineConfig(({ mode }) => ({
         screenshots: [
           {
             "src": "screenshot-mobile.png",
-            "sizes": "390x694",
+            "sizes": "750x1334",
             "type": "image/png",
             "form_factor": "narrow",
             "label": "Mobile view of the app"
           },
           {
             "src": "screenshot-desktop.png",
-            "sizes": "1920x1126",
+            "sizes": "1500x1042",
             "type": "image/png",
             "form_factor": "wide",
             "label": "Desktop view of the app"

@@ -21,7 +21,7 @@ Facial recognition helps protect your privacy.
 - Facial recognition technology is currently not established, so it is fundamentally impossible to consistently recognize faces correctly.
 - Face recognition may fail in extremely bright, dark, or sunny locations.
 - Faces facing away from the camera, tilted faces, or faces lying sideways may not be recognized.
-- Faces that are partially or completely outside the screen or that are too small may not be recognized.
+- Faces that are partially or completely off-screen or far from the camera may not be recognized.
 - Faces with paint on their faces, faces wearing masks, faces from manga or anime, or animal faces may not be recognized.
 - Faces that move violently or suddenly appear may not be recognized.
 - If face recognition is not possible, the face may remain displayed as is.
