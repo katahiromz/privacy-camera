@@ -1,0 +1,28 @@
+<!-- {{LANGUAGE_SPECIFIC}} -->
+<resources>
+    <!-- common -->
+    <string name="ok">OK</string>
+    <string name="cancel">キャンセル</string>
+    <string name="clear">クリア</string>
+    <string name="reset">リセット</string>
+    <string name="needs_microphone">このアプリがマイクにアクセスするには、権限が必要です。</string>
+    <string name="needs_camera">このアプリがカメラにアクセスするには、権限が必要です。</string>
+    <string name="needs_storage">このアプリが記憶媒体にアクセスするには、権限が必要です。</string>
+    <string name="needs_permissions">このアプリが正しく機能するには、権限が必要です。</string>
+    <string name="needs_camera_and_storage">このアプリはカメラ、マイク、ストレージの権限が必要です。</string>
+
+    <!-- main -->
+    <string name="app_name">プライバシー カメラ</string>
+    <string name="web_view">ウェブ ビュー</string>
+    <string name="progress_bar">プログレス バー</string>
+    <string name="now_starting">カメラを起動中...</string>
+
+    <!-- file saving -->
+    <string name="video_saved">動画を保存しました</string>
+    <string name="image_saved">画像を保存しました</string>
+    <string name="audio_saved">音声を保存しました</string>
+    <string name="open_file">ファイルを開く</string>
+
+    <!-- URLs -->
+    <string name="url">https://appassets.androidplatform.net/camera/index.html</string>
+</resources>
