@@ -26,10 +26,9 @@ const SHOW_CURRENT_TIME = false; // 現在の日時を表示するか？
 const BACKGROUND_IS_WHITE = false; // 背景は白か？
 
 // ダミー画像
-//const dummyImageUrl = `${BASE_URL}example-qr-code.png`;
 const dummyImageUrl = `${BASE_URL}dummy.jpg`;
-const USE_DUMMY_IMAGE = false;
-//const USE_DUMMY_IMAGE = true;
+//const USE_DUMMY_IMAGE = false;
+const USE_DUMMY_IMAGE = true;
 
 // 音声のURL
 const shutterSoundUrl = `${BASE_URL}ac-camera-shutter-sound.mp3`;
