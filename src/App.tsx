@@ -5,7 +5,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CanvasWithWebcam03, { ImageProcessData } from './components/CanvasWithWebcam03';
 import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia,
          getLocalDateTimeString, drawLineAsPolygon, cloneCanvas } from './libs/utils.ts';
-import { FaceDetection, Results as FaceDetectionResults } from '@mediapipe/face_detection';
+import { FaceLandmarker, FilesetResolver, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
 import './App.css';
 
 const IS_PRODUCTION = import.meta.env.MODE === 'production'; // 製品版か？
@@ -42,69 +42,72 @@ if (!IS_PRODUCTION) { // 本番環境ではない場合、
 // 古いブラウザのサポート(必要か？)
 polyfillGetUserMedia();
 
-// MediaPipe Face Detection の初期化
-let faceDetection: FaceDetection | null = null;
+// MediaPipe Face Landmarker の初期化
+let faceLandmarker: FaceLandmarker | null = null;
 let frameCount = 0; // フレーム カウンタ
 let lastFaceDetectTime = 0; // 前回顔認識したときの時刻
 let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
 let drawingFaceDetect = false; // 顔認識描画中か？
 let detectedFaceInfo = [];
-const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
+const USE_FACE_DETECTION_LOCAL_FILE = false; // ローカルファイルを使って顔認識するか？(CDNを使用)
 const MIN_DETECTION_CONFIDENCE = 0.4;
 
   // 顔認識成功時の処理
-const onDetectedFace = (results: FaceDetectionResults) => {
+const onDetectedFace = (results: FaceLandmarkerResult) => {
   // 「一瞬、顔の個数が変わった」かつ「0.8秒以上経っていない」場合は更新しない
   let now = (new Date()).getTime();
-  if (results.detections.length !== lastFaceDetectCount && now < lastFaceDetectTime + 800)
+  const faceCount = results.faceLandmarks ? results.faceLandmarks.length : 0;
+  if (faceCount !== lastFaceDetectCount && now < lastFaceDetectTime + 800)
     return;
 
   if (drawingFaceDetect) return;
 
   let newFaceInfo = [];
-  for (const detection of results.detections) {
-    if (!detection.landmarks || detection.landmarks.length < 2) {
-      console.warn("landmarks");
-      continue;
+  if (results.faceLandmarks) {
+    for (const landmarks of results.faceLandmarks) {
+      if (!landmarks || landmarks.length < 264) {
+        console.warn("insufficient landmarks");
+        continue;
+      }
+
+      // Face Landmarkerのランドマーク: 33=左目の左端, 263=右目の右端
+      const leftEye = landmarks[33];  // 左目の左端
+      const rightEye = landmarks[263]; // 右目の右端
+
+      newFaceInfo.push({leftEye, rightEye});
     }
-
-    // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
-    const rightEye = detection.landmarks[0]; // RIGHT_EYE
-    const leftEye = detection.landmarks[1];  // LEFT_EYE
-
-    newFaceInfo.push({leftEye, rightEye});
   }
   detectedFaceInfo = newFaceInfo;
 
-  lastFaceDetectCount = results.detections.length;
+  lastFaceDetectCount = faceCount;
   lastFaceDetectTime = now;
 };
 
-// MediaPipe Face Detection のセットアップ
+// MediaPipe Face Landmarker のセットアップ
 const initFaceDetection = async () => {
-  if (faceDetection || !ENABLE_FACE_DETECTION) return;
+  if (faceLandmarker || !ENABLE_FACE_DETECTION) return;
 
   try {
-    faceDetection = new FaceDetection({
-      locateFile: (file) => {
-        return USE_FACE_DETECTION_LOCAL_FILE ? `${BASE_URL}${file}` :
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
-      }
-    });
+    const vision = await FilesetResolver.forVisionTasks(
+      USE_FACE_DETECTION_LOCAL_FILE ? `${BASE_URL}wasm` :
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
+    );
 
-    faceDetection.setOptions({
-      model: 'short_range',
-      minDetectionConfidence: MIN_DETECTION_CONFIDENCE 
+    faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+      baseOptions: {
+        modelAssetPath: USE_FACE_DETECTION_LOCAL_FILE ? `${BASE_URL}face_landmarker.task` :
+          "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numFaces: 5,
+      minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
+      outputFaceBlendshapes: false,
+      outputFacialTransformationMatrixes: false
     });
-
-    faceDetection.onResults((results: FaceDetectionResults) => {
-      onDetectedFace(results);
-    });
-
-    await faceDetection.initialize();
   } catch (error) {
-    console.warn('MediaPipe Face Detection initialization failed:', error);
-    faceDetection = null;
+    console.warn('MediaPipe Face Landmarker initialization failed:', error);
+    faceLandmarker = null;
   }
 };
 
@@ -120,10 +123,10 @@ const detectFaces = (data) => {
   try {
     // 1フレームに1回顔検出を実行（パフォーマンス最適化）
     frameCount++;
-    if (faceDetection && (frameCount % 1 === 0)) {
-      faceDetection.send({ image: canvas }).catch((error) => {
-        console.warn('Face detection failed:', error);
-      });
+    if (faceLandmarker && (frameCount % 1 === 0)) {
+      const timestamp = performance.now();
+      const results = faceLandmarker.detectForVideo(canvas, timestamp);
+      onDetectedFace(results);
     }
 
     drawingFaceDetect = true;
@@ -141,8 +144,8 @@ const detectFaces = (data) => {
 
       // 目がすっぽり隠れるように微調整
       const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
-      let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
-      let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
+      let x0 = leftEyeX - dx * 0.1, y0 = leftEyeY - dy * 0.1;
+      let x1 = rightEyeX + dx * 0.1, y1 = rightEyeY + dy * 0.1;
       const norm = Math.sqrt(dx * dx + dy * dy);
 
       // 黒目線の描画
