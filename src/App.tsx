@@ -342,7 +342,7 @@ function App() {
           const dx = rightEyeX - leftEyeX;
           const dy = rightEyeY - leftEyeY;
           const angle = Math.atan2(dy, dx);
-          
+
           // 黒い楕円を描画
           offscreenCtx.save();
           offscreenCtx.translate(centerX, centerY);
@@ -351,23 +351,21 @@ function App() {
           offscreenCtx.ellipse(0, 0, radiusX, radiusY, 0, 0, 2 * Math.PI);
           offscreenCtx.fillStyle = '#000';
           offscreenCtx.fill();
-          
-          // 赤いX字の線を描画
+          // 赤い線を描画
           offscreenCtx.strokeStyle = '#f00';
-          offscreenCtx.lineWidth = Math.max(radiusX, radiusY) * BLACKOUT_LINE_WIDTH_COEFFICIENT; // 顔のサイズに比例した線の幅
-          offscreenCtx.lineCap = 'round';
-          
-          // X字の対角線を描画
-          offscreenCtx.beginPath();
-          offscreenCtx.moveTo(-radiusX, -radiusY);
-          offscreenCtx.lineTo(radiusX, radiusY);
+          offscreenCtx.lineWidth = (radiusX + radiusY) * 0.01;
           offscreenCtx.stroke();
-          
-          offscreenCtx.beginPath();
-          offscreenCtx.moveTo(radiusX, -radiusY);
-          offscreenCtx.lineTo(-radiusX, radiusY);
-          offscreenCtx.stroke();
-          
+          // 「顔」を描画
+          const textAlign = offscreenCtx.textAlign;
+          const textBaseline = offscreenCtx.textBaseline;
+          offscreenCtx.fillStyle = '#fff';
+          offscreenCtx.textAlign = 'center';
+          offscreenCtx.textBaseline = 'middle';
+          offscreenCtx.font = `${(radiusX + radiusY) * 0.2}px sans-serif`;
+          offscreenCtx.fillText(t('face'), 0, 0);
+          offscreenCtx.textAlign = textAlign;
+          offscreenCtx.textBaseline = textBaseline;
+
           offscreenCtx.restore();
         }
       }
