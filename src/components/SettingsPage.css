@@ -18,7 +18,7 @@
   position: relative;
   padding: 20px;
   border-bottom: 1px solid #e0e0e0;
-  background-color: #f5f5f5;
+  background-color: #ccc;
 }
 
 .settings-header h1 {
@@ -74,7 +74,7 @@
   font-size: 16px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  background-color: #fff;
+  background-color: #ccc;
   cursor: pointer;
 }
 
