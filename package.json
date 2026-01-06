@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fix-webm-duration/fix": "^1.0.1",
+    "@mediapipe/face_detection": "^0.4.1646425229",
     "i18next": "^25.7.2",
     "i18next-browser-languagedetector": "^8.2.0",
     "i18next-http-backend": "^3.0.2",

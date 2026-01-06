@@ -3,7 +3,8 @@
 // License: MIT
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CanvasWithWebcam03, { ImageProcessData } from './components/CanvasWithWebcam03';
-import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia } from './libs/utils.ts';
+import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia, getLocalDateTimeString } from './libs/utils.ts';
+import { FaceDetection, Results as FaceDetectionResults } from '@mediapipe/face_detection';
 import './App.css';
 
 const IS_PRODUCTION = import.meta.env.MODE === 'production'; // 製品版か？
@@ -20,6 +21,7 @@ const BASE_URL = import.meta.env.BASE_URL;
 const ENABLE_KEYS = true; // キーボード操作するか？
 const ENABLE_FACE_DETECTION = true; // 顔認識を有効にするか？
 const SHOW_CURRENT_TIME = false; // 現在の日時を表示するか？
+const BACKGROUND_IS_WHITE = false; // 背景は白か？
 
 // ダミー画像
 const dummyImageUrl = `${BASE_URL}example-qr-code.png`;
@@ -38,6 +40,45 @@ if (!IS_PRODUCTION) { // 本番環境ではない場合、
 
 // 古いブラウザのサポート(必要か？)
 polyfillGetUserMedia();
+
+// MediaPipe Face Detection の初期化
+let faceDetection: FaceDetection | null = null;
+let lastFaceResults: FaceDetectionResults | null = null;
+let isDetecting = false;
+let frameCount = 0;
+
+// MediaPipe Face Detection のセットアップ
+const initFaceDetection = async () => {
+  if (faceDetection || !ENABLE_FACE_DETECTION) return;
+  
+  try {
+    faceDetection = new FaceDetection({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`;
+      }
+    });
+    
+    faceDetection.setOptions({
+      model: 'short_range',
+      minDetectionConfidence: 0.5
+    });
+    
+    faceDetection.onResults((results: FaceDetectionResults) => {
+      lastFaceResults = results;
+      isDetecting = false;
+    });
+    
+    await faceDetection.initialize();
+  } catch (error) {
+    console.warn('MediaPipe Face Detection initialization failed:', error);
+    faceDetection = null;
+  }
+};
+
+// アプリ起動時にFace Detectionを初期化
+if (ENABLE_FACE_DETECTION) {
+  initFaceDetection();
+}
 
 // 画像処理関数
 const onImageProcess = async (data: ImageProcessData) => {
@@ -92,7 +133,81 @@ const onImageProcess = async (data: ImageProcessData) => {
   let avgxy = (width + height) / 2;
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
-    // TODO: 顔認識
+    try {
+      // 2フレームに1回顔検出を実行（パフォーマンス最適化）
+      frameCount++;
+      if (faceDetection && video && frameCount % 2 === 0 && !isDetecting) {
+        isDetecting = true;
+        faceDetection.send({ image: video }).catch((error) => {
+          console.warn('Face detection failed:', error);
+          isDetecting = false;
+        });
+      }
+      
+      // 検出結果がある場合、黒い線を描画
+      if (lastFaceResults && lastFaceResults.detections) {
+        for (const detection of lastFaceResults.detections) {
+          if (!detection.landmarks || detection.landmarks.length < 2) continue;
+          
+          // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
+          const rightEye = detection.landmarks[0]; // RIGHT_EYE
+          const leftEye = detection.landmarks[1];  // LEFT_EYE
+          
+          if (!rightEye || !leftEye) continue;
+          
+          // 正規化座標(0.0-1.0)をソース座標に変換
+          let rightEyeX = rightEye.x * srcWidth;
+          let rightEyeY = rightEye.y * srcHeight;
+          let leftEyeX = leftEye.x * srcWidth;
+          let leftEyeY = leftEye.y * srcHeight;
+          
+          // ズームとオフセットを考慮した座標変換
+          if (currentZoom !== 1.0 || offset.x !== 0 || offset.y !== 0) {
+            const sourceWidth = srcWidth / currentZoom;
+            const sourceHeight = srcHeight / currentZoom;
+            const maxOffsetX = (srcWidth - sourceWidth) / 2;
+            const maxOffsetY = (srcHeight - sourceHeight) / 2;
+            const sourceX = maxOffsetX + offset.x;
+            const sourceY = maxOffsetY + offset.y;
+            
+            // ソース座標系からズーム後の座標系に変換
+            rightEyeX = (rightEyeX - sourceX) * currentZoom;
+            rightEyeY = (rightEyeY - sourceY) * currentZoom;
+            leftEyeX = (leftEyeX - sourceX) * currentZoom;
+            leftEyeY = (leftEyeY - sourceY) * currentZoom;
+          }
+          
+          // キャンバス座標に変換（スケーリング）
+          rightEyeX = (rightEyeX / srcWidth) * width;
+          rightEyeY = (rightEyeY / srcHeight) * height;
+          leftEyeX = (leftEyeX / srcWidth) * width;
+          leftEyeY = (leftEyeY / srcHeight) * height;
+          
+          // 鏡像モードの場合、座標を反転
+          if (isMirrored) {
+            rightEyeX = width - rightEyeX;
+            leftEyeX = width - leftEyeX;
+          }
+          
+          // 黒い線を描画（左目の左端から右目の右端）
+          // 鏡像の場合、左右が逆転しているので、座標の大小で判定
+          const leftMostX = Math.min(rightEyeX, leftEyeX);
+          const rightMostX = Math.max(rightEyeX, leftEyeX);
+          const leftMostY = rightEyeX < leftEyeX ? rightEyeY : leftEyeY;
+          const rightMostY = rightEyeX < leftEyeX ? leftEyeY : rightEyeY;
+          
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = Math.max(3, minxy * 0.01);
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(leftMostX, leftMostY);
+          ctx.lineTo(rightMostX, rightMostY);
+          ctx.stroke();
+        }
+      }
+    } catch (error) {
+      console.warn('Error during face detection:', error);
+    }
   }
 
   if (SHOW_CURRENT_TIME) { // ちょっと日時を描画してみるか？
