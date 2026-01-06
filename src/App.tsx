@@ -27,8 +27,8 @@ const BACKGROUND_IS_WHITE = false; // 背景は白か？
 // ダミー画像
 //const dummyImageUrl = `${BASE_URL}example-qr-code.png`;
 const dummyImageUrl = `${BASE_URL}dummy.jpg`;
-//const USE_DUMMY_IMAGE = false;
-const USE_DUMMY_IMAGE = true;
+const USE_DUMMY_IMAGE = false;
+//const USE_DUMMY_IMAGE = true;
 
 // 音声のURL
 const shutterSoundUrl = `${BASE_URL}ac-camera-shutter-sound.mp3`;
@@ -98,6 +98,57 @@ if (ENABLE_FACE_DETECTION) {
   initFaceDetection();
 }
 
+// 顔認識をする
+const doFaceDetection = (data) => {
+  const { ctx, x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
+
+  try {
+    // 3フレームに1回顔検出を実行（パフォーマンス最適化）
+    frameCount++;
+    if (faceDetection && (frameCount % 3 === 0)) {
+      faceDetection.send({ image: canvas }).catch((error) => {
+        console.warn('Face detection failed:', error);
+      });
+    }
+
+    // 検出結果がある場合、黒い線(黒目線)を描画
+    drawingFaceDetect = true;
+    if (!lastFaceResults || !lastFaceResults.detections) console.log(123);
+    if (lastFaceResults && lastFaceResults.detections) {
+      for (const detection of lastFaceResults.detections) {
+        if (!detection.landmarks || detection.landmarks.length < 2) {
+          console.warn("landmarks");
+          continue;
+        }
+
+        // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
+        const rightEye = detection.landmarks[0]; // RIGHT_EYE
+        const leftEye = detection.landmarks[1];  // LEFT_EYE
+        console.assert(leftEye);
+        console.assert(rightEye);
+
+        // 正規化座標(0.0-1.0)をソース座標に変換
+        let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
+        let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
+
+        // 目がすっぽり隠れるように微調整
+        const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
+        let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
+        let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
+
+        const norm = Math.sqrt(dx * dx + dy * dy);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = norm * 0.8;
+        ctx.lineCap = 'square';
+        drawLineAsPolygon(ctx, x0, y0, x1, y1);
+      }
+    }
+    drawingFaceDetect = false;
+  } catch (error) {
+    console.warn('Error during face detection:', error);
+  }
+};
+
 // 画像処理関数
 const onImageProcess = async (data: ImageProcessData) => {
   const { x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
@@ -151,51 +202,7 @@ const onImageProcess = async (data: ImageProcessData) => {
   let avgxy = (width + height) / 2;
 
   if (ENABLE_FACE_DETECTION) { // 顔認識を有効にするか？
-    try {
-      // 3フレームに1回顔検出を実行（パフォーマンス最適化）
-      frameCount++;
-      if (faceDetection && (frameCount % 3 === 0)) {
-        faceDetection.send({ image: canvas }).catch((error) => {
-          console.warn('Face detection failed:', error);
-        });
-      }
-
-      // 検出結果がある場合、黒い線(黒目線)を描画
-      drawingFaceDetect = true;
-      if (!lastFaceResults || !lastFaceResults.detections) console.log(123);
-      if (lastFaceResults && lastFaceResults.detections) {
-        for (const detection of lastFaceResults.detections) {
-          if (!detection.landmarks || detection.landmarks.length < 2) {
-            console.warn("landmarks");
-            continue;
-          }
-
-          // MediaPipeのランドマーク: 0=RIGHT_EYE, 1=LEFT_EYE
-          const rightEye = detection.landmarks[0]; // RIGHT_EYE
-          const leftEye = detection.landmarks[1];  // LEFT_EYE
-          console.assert(leftEye);
-          console.assert(rightEye);
-
-          // 正規化座標(0.0-1.0)をソース座標に変換
-          let leftEyeX = leftEye.x * width, leftEyeY = leftEye.y * height;
-          let rightEyeX = rightEye.x * width, rightEyeY = rightEye.y * height;
-
-          // 目がすっぽり隠れるように微調整
-          const dx = rightEyeX - leftEyeX, dy = rightEyeY - leftEyeY;
-          let x0 = leftEyeX - dx * 0.6, y0 = leftEyeY - dy * 0.6;
-          let x1 = rightEyeX + dx * 0.6, y1 = rightEyeY + dy * 0.6;
-
-          const norm = Math.sqrt(dx * dx + dy * dy);
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = norm * 0.8;
-          ctx.lineCap = 'square';
-          drawLineAsPolygon(ctx, x0, y0, x1, y1);
-        }
-      }
-      drawingFaceDetect = false;
-    } catch (error) {
-      console.warn('Error during face detection:', error);
-    }
+    doFaceDetection({...data, ctx});
   }
 
   if (SHOW_CURRENT_TIME) { // ちょっと日時を描画してみるか？
