@@ -65,7 +65,7 @@ export interface ImageProcessData {
   isMirrored: boolean,
   currentZoom: number,
   offset: { x: number, y: number },
-  showCodes: booean,
+  showCodes: boolean,
 };
 
 // CanvasWithWebcam03のprops
