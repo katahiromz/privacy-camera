@@ -60,7 +60,7 @@ const onDetectedFace = (results: FaceDetectionResults) => {
 
   if (drawingFaceDetect) return;
 
-  detectedFaceInfo = []
+  let newFaceInfo = [];
   for (const detection of results.detections) {
     if (!detection.landmarks || detection.landmarks.length < 2) {
       console.warn("landmarks");
@@ -71,8 +71,9 @@ const onDetectedFace = (results: FaceDetectionResults) => {
     const rightEye = detection.landmarks[0]; // RIGHT_EYE
     const leftEye = detection.landmarks[1];  // LEFT_EYE
 
-    detectedFaceInfo.push({leftEye, rightEye});
+    newFaceInfo.push({leftEye, rightEye});
   }
+  detectedFaceInfo = newFaceInfo;
 
   lastFaceDetectCount = results.detections.length;
   lastFaceDetectTime = now;
@@ -126,7 +127,11 @@ const detectFaces = (data) => {
 
     // 検出結果がある場合、黒い線(黒目線)を描画
     drawingFaceDetect = true;
-    for (const info of detectedFaceInfo) {
+
+    // 現在保持している情報をコピーして使用（描画中の書き換え対策）
+    const facesToDraw = [...detectedFaceInfo];
+
+    for (const info of facesToDraw) {
       const {leftEye, rightEye} = info;
 
       // 正規化座標(0.0-1.0)をソース座標に変換
