@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: 'autoUpdate', // 更新があったら即座に反映
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      workbox: {
+        maximumFileSizeToCacheInBytes: 10000000
+      },
       manifest: {
         name: 'Privacy Camera',
         short_name: 'Camera',

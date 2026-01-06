@@ -10,4 +10,4 @@
 local.properties
 app/release
 android/.kotlin/sessions/*
-app/src/main/assets/camera/
+app/src/main/assets/privacy-camera/
