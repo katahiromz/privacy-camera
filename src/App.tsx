@@ -50,6 +50,7 @@ let lastFaceDetectCount = 0; // 前回顔認識したときの顔の個数
 let drawingFaceDetect = false; // 顔認識描画中か？
 let detectedFaceInfo = [];
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
+const MIN_DETECTION_CONFIDENCE = 0.4;
 
   // 顔認識成功時の処理
 const onDetectedFace = (results: FaceDetectionResults) => {
@@ -93,7 +94,7 @@ const initFaceDetection = async () => {
 
     faceDetection.setOptions({
       model: 'short_range',
-      minDetectionConfidence: 0.3
+      minDetectionConfidence: MIN_DETECTION_CONFIDENCE 
     });
 
     faceDetection.onResults((results: FaceDetectionResults) => {
@@ -117,20 +118,20 @@ const detectFaces = (data) => {
   const { ctx, x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes, qrResultsRef } = data;
 
   try {
-    // 3フレームに1回顔検出を実行（パフォーマンス最適化）
+    // 1フレームに1回顔検出を実行（パフォーマンス最適化）
     frameCount++;
-    if (faceDetection && (frameCount % 3 === 0)) {
+    if (faceDetection && (frameCount % 1 === 0)) {
       faceDetection.send({ image: canvas }).catch((error) => {
         console.warn('Face detection failed:', error);
       });
     }
 
-    // 検出結果がある場合、黒い線(黒目線)を描画
     drawingFaceDetect = true;
 
     // 現在保持している情報をコピーして使用（描画中の書き換え対策）
     const facesToDraw = [...detectedFaceInfo];
 
+    // 検出結果がある場合、黒い線(黒目線)を描画
     for (const info of facesToDraw) {
       const {leftEye, rightEye} = info;
 
@@ -150,6 +151,7 @@ const detectFaces = (data) => {
       ctx.lineCap = 'square';
       drawLineAsPolygon(ctx, x0, y0, x1, y1);
     }
+
     drawingFaceDetect = false;
   } catch (error) {
     console.warn('Error during face detection:', error);

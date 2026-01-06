@@ -47,7 +47,7 @@ const TOUCH_PAN_SPEED = 1.5; // タッチによるパンの速度
 const BACKGROUND_IS_WHITE = false; // 背景は白か？
 const CAMERA_FACING_MODE_KEY = 'Camera_facingMode'; // localStorageのキー
 const MAX_CODE_READING_DISPLAY = 100; // コード表示の最大文字数
-const TARGET_FPS = 30; // フレームレート
+const TARGET_FPS = 12; // フレームレート（顔認識は時間がかかるので低めに設定）
 const FRAME_INTERVAL = 1000 / TARGET_FPS;
 const SCAN_INTERVAL = 500; // コード読み取り頻度(ミリ秒)
 
