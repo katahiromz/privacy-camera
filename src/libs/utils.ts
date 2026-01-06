@@ -42,7 +42,7 @@ export const getMaxOffset = (videoWidth: number, videoHeight: number, zoom: numb
 /**
  * ダウンロードファイル名の生成
  */
-export const generateFileName = (prefix: 'video_' | 'photo_', extension: string): string => {
+export const generateFileName = (prefix: string, extension: string): string => {
   // ローカル日時を取得
   const now = new Date();
 
@@ -62,7 +62,7 @@ export const generateFileName = (prefix: 'video_' | 'photo_', extension: string)
   const filename = `${prefix}${dateStr}_${timeStr}${extension}`;
 
   // 空白文字やファイル名に使用できない文字を _ に置き換える
-  const sanitizedFilename = filename.replace(/[ :\.\\\/]/g, '_');
+  const sanitizedFilename = filename.replace(/[ :\\\/]/g, '_');
   console.assert(extension[0] == '.');
   return sanitizedFilename;
 };
