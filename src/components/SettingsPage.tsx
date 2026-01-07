@@ -8,6 +8,9 @@ import './SettingsPage.css';
 
 export type PrivacyMode = 'eyeMask' | 'faceBlur' | 'blackout' | 'mosaic';
 
+// アプリケーションのベースパスを取得
+const BASE_URL = import.meta.env.BASE_URL;
+
 interface SettingsPageProps {
   privacyMode: PrivacyMode;
   onPrivacyModeChange: (mode: PrivacyMode) => void;
@@ -37,6 +40,13 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
         <h1>{t('settings_page')}</h1>
       </div>
       <div className="settings-content">
+        <div className="setting-version-info">
+          {t('camera_app_info')}
+        </div>
+        <div className="setting-version-info">
+          <img src={`${BASE_URL}/pwa-120x120.png`} alt="[Logo]" />
+        </div>
+        <hr />
         <div className="setting-item">
           <label htmlFor="privacy-mode">{t('privacy_mode')}</label>
           <select 
