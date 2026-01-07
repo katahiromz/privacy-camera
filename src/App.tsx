@@ -155,6 +155,7 @@ function App() {
 
   // 設定ページの表示状態
   const [showSettings, setShowSettings] = useState(false);
+  const [isClosingSettings, setIsClosingSettings] = useState(false);
 
   // プライバシーモード変更時の処理
   const handlePrivacyModeChange = (mode: PrivacyMode) => {
@@ -446,6 +447,17 @@ function App() {
     if (!ENABLE_CONFIG)
       return;
     setShowSettings(true);
+    setIsClosingSettings(false);
+  };
+
+  // 設定ページを閉じる
+  const handleCloseSettings = () => {
+    setIsClosingSettings(true);
+    // アニメーション完了後に実際に閉じる
+    setTimeout(() => {
+      setShowSettings(false);
+      setIsClosingSettings(false);
+    }, 300); // CSSアニメーション時間と合わせる
   };
 
   useEffect(() => {
@@ -558,7 +570,7 @@ function App() {
     const handleBack = (event: PopStateEvent) => {
       event.preventDefault(); // イベントのデフォルトの処理をスキップ。
       if (showSettings) {
-        setShowSettings(false);
+        handleCloseSettings();
       }
     };
 
@@ -577,7 +589,7 @@ function App() {
             if (!showSettings)
               window.android.finishApp();
             else
-              setShowSettings(false);
+              handleCloseSettings();
           } catch (err) { }
         }
         break;
@@ -605,7 +617,8 @@ function App() {
         <SettingsPage
           privacyMode={privacyMode}
           onPrivacyModeChange={handlePrivacyModeChange}
-          onBack={() => setShowSettings(false)}
+          onBack={handleCloseSettings}
+          isClosing={isClosingSettings}
         />
       )}
       <CanvasWithWebcam03

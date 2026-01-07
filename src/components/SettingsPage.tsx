@@ -15,9 +15,15 @@ interface SettingsPageProps {
   privacyMode: PrivacyMode;
   onPrivacyModeChange: (mode: PrivacyMode) => void;
   onBack: () => void;
+  isClosing?: false;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeChange, onBack }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({
+  privacyMode,
+  onPrivacyModeChange,
+  onBack,
+  isClosing = false
+}) => {
   const { t } = useTranslation();
 
   const handleModeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -28,7 +34,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
   };
 
   return (
-    <div className="settings-page">
+    <div className={`settings-page ${isClosing ? 'closing' : ''}`}>
       <div className="settings-header">
         <button 
           className="back-button" 
