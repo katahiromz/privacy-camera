@@ -140,7 +140,7 @@ function App() {
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
     try {
       const saved = localStorage.getItem(PRIVACY_MODE_KEY);
-      return (saved === 'eyeMask' || saved === 'faceBlur' || saved === 'blackout') ? saved : 'eyeMask';
+      return (saved === 'eyeMask' || saved === 'faceBlur' || saved === 'blackout' || saved === 'mosaic') ? saved : 'eyeMask';
     } catch (error) {
       console.warn('localStorage not available:', error);
       return 'eyeMask';
@@ -370,6 +370,60 @@ function App() {
           offscreenCtx.textBaseline = textBaseline;
 
           offscreenCtx.restore();
+        } else if (currentPrivacyMode === 'mosaic') {
+          // モザイクモード
+          // 顔全体の境界ボックスを計算
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          for (const landmark of landmarks) {
+            const lx = landmark.x * width;
+            const ly = landmark.y * height;
+            minX = Math.min(minX, lx);
+            minY = Math.min(minY, ly);
+            maxX = Math.max(maxX, lx);
+            maxY = Math.max(maxY, ly);
+          }
+          
+          // 余白を追加
+          const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
+          minX = Math.max(0, minX - padding);
+          minY = Math.max(0, minY - padding);
+          maxX = Math.min(width, maxX + padding);
+          maxY = Math.min(height, maxY + padding);
+          
+          const faceWidth = maxX - minX;
+          const faceHeight = maxY - minY;
+          
+          // モザイクのブロックサイズ
+          const blockSize = Math.max(4, Math.floor(faceWidth * 0.05));
+          
+          // 一時キャンバスを作成または再利用
+          if (!tempBlurCanvas || 
+              tempBlurCanvas.width < faceWidth || 
+              tempBlurCanvas.height < faceHeight) {
+            tempBlurCanvas = document.createElement('canvas');
+            tempBlurCanvas.width = Math.ceil(Math.max(faceWidth, 100));
+            tempBlurCanvas.height = Math.ceil(Math.max(faceHeight, 100));
+          }
+          const tempCtx = tempBlurCanvas.getContext('2d');
+          
+          if (tempCtx) {
+            // スムージングを無効化
+            tempCtx.imageSmoothingEnabled = false;
+            
+            // 顔領域をコピー
+            tempCtx.clearRect(0, 0, tempBlurCanvas.width, tempBlurCanvas.height);
+            tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
+            
+            // 低解像度にスケールダウン
+            const smallWidth = Math.max(1, Math.floor(faceWidth / blockSize));
+            const smallHeight = Math.max(1, Math.floor(faceHeight / blockSize));
+            tempCtx.drawImage(tempBlurCanvas, 0, 0, faceWidth, faceHeight, 0, 0, smallWidth, smallHeight);
+            
+            // 元のサイズにスケールアップ（モザイク効果）
+            offscreenCtx.imageSmoothingEnabled = false;
+            offscreenCtx.drawImage(tempBlurCanvas, 0, 0, smallWidth, smallHeight, minX, minY, faceWidth, faceHeight);
+            offscreenCtx.imageSmoothingEnabled = true; // デフォルトに戻す
+          }
         }
       }
     }
