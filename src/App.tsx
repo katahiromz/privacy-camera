@@ -310,7 +310,8 @@ function App() {
             tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
             
             // ぼかしフィルタを適用
-            offscreenCtx.filter = 'blur(25px)';
+            const blurRadius = Math.ceil(faceWidth * 0.08);
+            offscreenCtx.filter = `blur(${blurRadius}px)`;
             offscreenCtx.drawImage(tempBlurCanvas, 0, 0, faceWidth, faceHeight, minX, minY, faceWidth, faceHeight);
             offscreenCtx.filter = 'none'; // フィルタをリセット
           }
