@@ -45,7 +45,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
             {t('camera_app_info')}
           </p>
           <p>
-            <img src={`${BASE_URL}/pwa-120x120.png`} alt="[Logo]" />
+            <img src={`${BASE_URL}pwa-120x120.png`} alt="[Logo]" />
           </p>
         </div>
         <hr />

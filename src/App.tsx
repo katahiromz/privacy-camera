@@ -550,6 +550,22 @@ function App() {
     return () => document.body.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  // ブラウザの「戻る」ボタンに対応する
+  useEffect(() => {
+    // 直前の履歴に現在のページを追加
+    window.history.pushState(null, '', window.location.href);
+
+    const handleBack = (event: PopStateEvent) => {
+      event.preventDefault(); // イベントのデフォルトの処理をスキップ。
+      if (showSettings) {
+        setShowSettings(false);
+      }
+    };
+
+    window.addEventListener('popstate', handleBack);
+    return () => window.removeEventListener('popstate', handleBack);
+  }, [showSettings]);
+
   // メッセージを処理する
   useEffect(() => {
     const onMessage = (e) => {
@@ -557,8 +573,12 @@ function App() {
       case 'go_back': // Android標準の「戻る」ボタンをサポートする。
         if (window.android) {
           e.preventDefault(); // イベントのデフォルトの処理をスキップ。
-          // 可能ならばアプリを閉じる(完全に終了する訳ではない)
-          try { window.android.finishApp(); } catch (err) { }
+          try {
+            if (!showSettings)
+              window.android.finishApp();
+            else
+              setShowSettings(false);
+          } catch (err) { }
         }
         break;
       case 'onAppResume': // Androidアプリ再開時の処理を行う。
@@ -577,7 +597,7 @@ function App() {
     return () => {
       window.removeEventListener('message', onMessage);
     }
-  }, []);
+  }, [showSettings]);
 
   return (
     <>
