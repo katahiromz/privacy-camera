@@ -2,11 +2,12 @@
 // Author: katahiromz
 // License: MIT
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import CanvasWithWebcam03, { ImageProcessData } from './components/CanvasWithWebcam03';
+import CanvasWithWebcam03, { ImageProcessData, CanvasWithWebcam03Handle } from './components/CanvasWithWebcam03';
 import SettingsPage, { PrivacyMode } from './components/SettingsPage';
+import { QRResult } from './libs/CodeReader';
 import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia,
-         getLocalDateTimeString, drawLineAsPolygon, cloneCanvas } from './libs/utils.ts';
-import { FaceLandmarker, FilesetResolver, FaceLandmarkerResult } from '@mediapipe/tasks-vision';
+         getLocalDateTimeString, drawLineAsPolygon, cloneCanvas } from './libs/utils';
+import { FaceLandmarker, FilesetResolver, FaceLandmarkerResult, NormalizedLandmark } from '@mediapipe/tasks-vision';
 import './App.css';
 
 const IS_PRODUCTION = import.meta.env.MODE === 'production'; // 製品版か？
@@ -78,9 +79,6 @@ const initFaceDetection = async () => {
       minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
       outputFaceBlendshapes: false,
       outputFacialTransformationMatrixes: false,
-      min_face_detection_confidence: 0.1,
-      min_face_presence_confidence: 0.1,
-      min_tracking_confidence: 0.1,
     });
   } catch (error) {
     console.warn('MediaPipe Face Landmarker initialization failed:', error);
@@ -102,7 +100,7 @@ const detectFaces = (canvas: HTMLCanvasElement) => {
       const timestamp = performance.now();
       const results = faceLandmarker.detectForVideo(canvas, timestamp);
 
-      let faceInfo = [];
+      let faceInfo: FaceInfo[] = [];
       if (results.faceLandmarks) {
         for (const landmarks of results.faceLandmarks) {
           if (!landmarks || landmarks.length < MIN_FACE_LANDMARKS) {
@@ -127,14 +125,14 @@ const detectFaces = (canvas: HTMLCanvasElement) => {
 };
 
 let oldFaceCount = 0; // 古い顔の個数
-let oldFaceInfo = null; // 古い顔情報
+let oldFaceInfo: FaceInfo[] | null = null; // 古い顔情報
 let faceDetectTime = 0; // 顔情報が更新された日時
 
 // アプリ
 function App() {
   const { t } = useTranslation(); // 翻訳用
-  const canvasWithCamera = useRef<CanvasWithWebcam03>(null);
-  const qrResultsRef = useRef([]); // QRコード読み取り結果（CanvasWithWebcam03に渡すため）
+  const canvasWithCamera = useRef<CanvasWithWebcam03Handle>(null);
+  const qrResultsRef = useRef<QRResult[]>([]); // QRコード読み取り結果（CanvasWithWebcam03に渡すため）
 
   // プライバシーモードの状態管理
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
@@ -528,29 +526,29 @@ function App() {
         if (!event.ctrlKey && !event.altKey) { // CtrlキーやAltキーが押されていない？
           event.preventDefault();
           // 録画開始・録画停止を切り替える
-          if (canvasWithCamera.current?.isRecording()) {
-            canvasWithCamera.current?.stopRecording();
+          if (canvasWithCamera.current?.isRecording?.()) {
+            canvasWithCamera.current?.stopRecording?.();
           } else {
-            canvasWithCamera.current?.startRecording();
+            canvasWithCamera.current?.startRecording?.();
           }
         }
         break;
       // パン操作 (矢印)
       case 'ArrowUp':
         event.preventDefault();
-        canvasWithCamera.current?.panUp();
+        canvasWithCamera.current?.panUp?.();
         break;
       case 'ArrowDown':
         event.preventDefault();
-        canvasWithCamera.current?.panDown();
+        canvasWithCamera.current?.panDown?.();
         break;
       case 'ArrowLeft':
         event.preventDefault();
-        canvasWithCamera.current?.panRight();
+        canvasWithCamera.current?.panRight?.();
         break;
       case 'ArrowRight':
         event.preventDefault();
-        canvasWithCamera.current?.panLeft();
+        canvasWithCamera.current?.panLeft?.();
         break;
       default:
         //console.log(event.key);
@@ -580,14 +578,14 @@ function App() {
 
   // メッセージを処理する
   useEffect(() => {
-    const onMessage = (e) => {
+    const onMessage = (e: MessageEvent) => {
       switch (e.data) {
       case 'go_back': // Android標準の「戻る」ボタンをサポートする。
         if (window.android) {
           e.preventDefault(); // イベントのデフォルトの処理をスキップ。
           try {
             if (!showSettings)
-              window.android.finishApp();
+              window.android.finishApp?.();
             else
               handleCloseSettings();
           } catch (err) { }
@@ -596,7 +594,7 @@ function App() {
       case 'onAppResume': // Androidアプリ再開時の処理を行う。
         if (window.android) {
           e.preventDefault(); // イベントのデフォルトの処理をスキップ。
-          canvasWithCamera.current?.onAppResume();
+          canvasWithCamera.current?.onAppResume?.();
         }
         break;
       default:
@@ -632,9 +630,10 @@ function App() {
         eventTarget={document.body}
         autoMirror={false}
         onImageProcess={onImageProcess}
-        dummyImageSrc={ USE_DUMMY_IMAGE ? dummyImageUrl : null }
+        dummyImageSrc={ USE_DUMMY_IMAGE ? dummyImageUrl : undefined }
         showConfig={SHOW_CONFIG}
         doConfig={doConfig}
+        qrResultsRef={qrResultsRef}
         aria-label={t('camera_app')}
       />
     </>

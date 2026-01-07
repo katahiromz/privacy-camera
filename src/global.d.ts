@@ -14,6 +14,7 @@ interface AndroidInterface {
   onStopRecording?: () => void;
   openAppSettings?: () => void;
   openURL?: (url: string) => void;
+  finishApp?: () => void;
   saveMediaToGallery: (base64data: string, fileName: string, mimeType: string, type: string) => void;
 }
 

@@ -104,11 +104,12 @@ interface CanvasWithWebcam03Props {
 };
 
 // カメラ付きキャンバスのハンドル
-interface CanvasWithWebcam03Handle {
+export interface CanvasWithWebcam03Handle {
   canvas?: HTMLCanvasElement;
   controls?: HTMLElement;
   getZoomRatio?: () => number;
   setZoomRatio?: (ratio: number) => void;
+  takePhoto?: () => void;
   startRecording?: () => void;
   stopRecording?: () => void;
   zoomIn?: () => void;
@@ -116,7 +117,7 @@ interface CanvasWithWebcam03Handle {
   isRecording?: () => boolean;
   getPan?: () => { x: number, y: number };
   setPan?: (newPanX: number, newPanY: number) => void;
-  getRealFacingMode?: () => string | null;
+  getRealFacingMode?: () => FacingMode | null;
   panLeft?: () => void;
   panRight?: () => void;
   panUp?: () => void;
@@ -378,7 +379,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   }, []);
 
   // ダブルタップを検出する
-  const handleTouchStartForDoubleTap = useCallback((e: React.TouchEvent) => {
+  const handleTouchStartForDoubleTap = useCallback((e: TouchEvent) => {
     console.log('handleTouchStartForDoubleTap');
     e.preventDefault();
 
@@ -428,8 +429,10 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
             console.log('clearInterval');
             clearInterval(zoomTimerRef.current);
             zoomTimerRef.current = null;
-            clearTimeout(zoomTimerRef2.current);
-            zoomTimerRef2.current = null;
+            if (zoomTimerRef2.current !== null) {
+              clearTimeout(zoomTimerRef2.current);
+              zoomTimerRef2.current = null;
+            }
             setShowZoomInfo(false);
           }
           return clamped; // 完全に境界値に固定
@@ -641,7 +644,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
       onImageProcess({
         x: 0, y: 0, width: canvas.width, height: canvas.height,
         src, srcWidth, srcHeight,
-        video: video,
+        video: video ?? undefined,
         canvas: canvas,
         currentZoom: zoomRef.current,
         offset: offsetRef.current,
@@ -889,7 +892,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   }, [clampZoomWithResistance, clampPan]);
 
   // マウスのボタンが押された／タッチが開始された
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMouseDown = (e: MouseEvent | TouchEvent) => {
     //console.log('handleMouseDown');
     if (!ENABLE_USER_PANNING && !ENABLE_USER_ZOOMING) return;
 
@@ -911,10 +914,10 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     // 1本指ならパン操作へ
 
     if (USE_MIDDLE_BUTTON_FOR_PANNING && !('touches' in e)) {
-      if (e.button != 1) return; // 中央ボタン？
+      if ('button' in e && e.button != 1) return; // 中央ボタン？
     }
 
-    if (e.button == 2) return; // 右ボタンは無視
+    if ('button' in e && e.button == 2) return; // 右ボタンは無視
 
     isDragging.current = true;
     const pos = 'touches' in e ? e.touches[0] : e;
@@ -1112,12 +1115,14 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   }, [offset]);
   // 位置のずれを設定する
   const setPan = useCallback((newPanX: number, newPanY: number) => {
+    const { srcWidth, srcHeight } = getSourceInfo();
+    const max = getMaxOffset(srcWidth, srcHeight, zoomRef.current);
     setOffset({ x: clamp(-max.x, newPanX, max.x), y: clamp(-max.y, newPanY, max.y) });
   }, []);
 
   // 本当の facingMode (前面・背面)を返す
-  const getRealFacingMode = useCallback((): string | null => {
-    return webcamRef.current?.getRealFacingMode();
+  const getRealFacingMode = useCallback((): FacingMode | null => {
+    return webcamRef.current?.getRealFacingMode() ?? null;
   }, []);
 
   // カメラが実際に準備できた時の最終判定
@@ -1125,9 +1130,11 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     console.log('onUserMediaBridge');
     setIsInitialized(true);
     setErrorString('');
-    console.log(canvasRef.current.width, canvasRef.current.height);
+    if (canvasRef.current) {
+      console.log(canvasRef.current.width, canvasRef.current.height);
+    }
 
-    const actualMode = webcamRef.current.getRealFacingMode();
+    const actualMode = webcamRef.current?.getRealFacingMode();
     if (actualMode) {
       console.log('actualMode:', actualMode);
       if (autoMirror && webcamRef.current) {
