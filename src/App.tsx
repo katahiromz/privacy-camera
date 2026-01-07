@@ -170,7 +170,7 @@ function App() {
   const onImageProcess = useCallback(async (data: ImageProcessData) => {
     const { x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes } = data;
     const ctx = canvas.getContext('2d',
-      { alpha: false, desynchronized: true, willReadFrequently: false } // 速度優先
+      { alpha: false, willReadFrequently: false } // 速度優先
     );
 
     if (!ctx || width <= 0 || height <= 0) return;
