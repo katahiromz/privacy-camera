@@ -169,9 +169,7 @@ function App() {
   // 画像処理関数
   const onImageProcess = useCallback(async (data: ImageProcessData) => {
     const { x, y, width, height, src, srcWidth, srcHeight, video, canvas, isMirrored, currentZoom, offset, showCodes } = data;
-    const ctx = canvas.getContext('2d',
-      { alpha: false, willReadFrequently: false } // 速度優先
-    );
+    const ctx = canvas.getContext('2d', { alpha: false }); // 速度優先
 
     if (!ctx || width <= 0 || height <= 0) return;
 
@@ -181,9 +179,7 @@ function App() {
       offscreenCanvas.width = canvas.width;
       offscreenCanvas.height = canvas.height;
     }
-    const offscreenCtx = offscreenCanvas.getContext('2d',
-      { alpha: false, willReadFrequently: false }
-    );
+    const offscreenCtx = offscreenCanvas.getContext('2d', { alpha: false });
 
     if (!offscreenCtx) return;
 
