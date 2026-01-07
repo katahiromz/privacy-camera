@@ -85,8 +85,8 @@ interface CanvasWithWebcam03Props {
   photoFormat?: "image/png" | "image/webp" | "image/jpeg";
   photoQuality?: number;
   recordingFormat?: "video/webm" | "video/mp4";
-  downloadFile?: ((blob: Blob, fileName: string, mimeType: string, type: string) => void) | null;
-  saveFile?: ((blob: Blob, fileName: string, mimeType: string, type: string) => void) | null;
+  downloadFile?: ((blob: Blob, fileName: string, mimeType: string, type: 'video' | 'photo' | 'audio') => void) | null;
+  saveFile?: ((blob: Blob, fileName: string, mimeType: string, type: 'video' | 'photo' | 'audio') => void) | null;
   eventTarget?: HTMLElement;
   showControls?: boolean;
   showRecordingTime?: boolean;
@@ -1203,7 +1203,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   const openAppSettings = useCallback(() => {
     if (isAndroidApp && window.android) {
       try {
-        window.android.openAppSettings();
+        window.android.openAppSettings?.();
       } catch (e) {
         console.warn(e);
       }
@@ -1234,8 +1234,8 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   }, [isCodeReaderON]);
 
   useImperativeHandle(ref, () => ({
-    canvas: canvasRef.current,
-    controls: controlsRef.current,
+    canvas: canvasRef.current ?? undefined,
+    controls: controlsRef.current ?? undefined,
     getZoomRatio: getZoomRatio.bind(this),
     setZoomRatio: setZoomRatio.bind(this),
     getPan: getPan.bind(this),
@@ -1254,8 +1254,10 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     onAppResume: onAppResume.bind(this),
   }));
 
-  const copyQRCode = useCallback((e) => {
-    navigator.clipboard.writeText(selectedQR);
+  const copyQRCode = useCallback((e: React.MouseEvent) => {
+    if (selectedQR) {
+      navigator.clipboard.writeText(selectedQR);
+    }
     setSelectedQR(null);
   }, [selectedQR]);
 
@@ -1271,10 +1273,12 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   };
 
   // QRコードのURLを参照
-  const openQRCodeURL = useCallback((e) => {
-    let urls = CodeReader.extractUrls(selectedQR);
-    if (urls.length > 0) {
-      handleOpenURL(urls[0]);
+  const openQRCodeURL = useCallback((e: React.MouseEvent) => {
+    if (selectedQR) {
+      let urls = CodeReader.extractUrls(selectedQR);
+      if (urls.length > 0) {
+        handleOpenURL(urls[0]);
+      }
     }
     setSelectedQR(null);
   }, [selectedQR]);
@@ -1404,7 +1408,6 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
           ref={webcamRef}
           audio={audio && isMicEnabled && (micPermission !== 'denied')}
           videoConstraints={videoConstraints}
-          muted={true}
           onUserMedia={onUserMediaBridge}
           onUserMediaError={onUserMediaErrorBridge}
           style={{
@@ -1421,7 +1424,6 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
         >
           {SHOW_CONTROLS && showControls ? (() => (
             <Webcam03Controls
-              ref={controlsRef}
               isRecording={isRecordingNow}
               takePhoto={takePhoto}
               startRecording={startRecording}
@@ -1432,10 +1434,10 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
               showCameraSwitch={ENABLE_CAMERA_SWITCH && showCameraSwitch}
               showConfig={SHOW_CONFIG && showConfig}
               showCodeReader={ENABLE_CODE_READER && showCodeReader}
-              enableTakePhoto={!errorString && cameraPermission !== 'denied'}
-              enableRecording={!errorString && cameraPermission !== 'denied'}
-              enableCameraSwitch={!errorString && cameraPermission !== 'denied'}
-              enableCodeReader={!errorString && cameraPermission !== 'denied'}
+              enableTakePhoto={!errorString && (cameraPermission === 'granted' || cameraPermission === 'prompt')}
+              enableRecording={!errorString && (cameraPermission === 'granted' || cameraPermission === 'prompt')}
+              enableCameraSwitch={!errorString && (cameraPermission === 'granted' || cameraPermission === 'prompt')}
+              enableCodeReader={!errorString && (cameraPermission === 'granted' || cameraPermission === 'prompt')}
               toggleCodeReader={toggleCodeReader}
               showCodes={ENABLE_CODE_READER && isCodeReaderON}
               aria-label={t('camera_controls')}
@@ -1445,7 +1447,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
       )}
 
       {/* 設定ボタン */}
-      {SHOW_CONFIG && showConfig && (
+      {SHOW_CONFIG && showConfig && doConfig && (
         <button
           onClick={doConfig}
           className="webcam03-button webcam03-button-config"

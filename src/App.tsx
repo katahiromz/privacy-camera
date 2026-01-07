@@ -91,8 +91,15 @@ if (ENABLE_FACE_DETECTION) {
   initFaceDetection();
 }
 
+// Face info type
+interface FaceInfo {
+  leftEye: NormalizedLandmark;
+  rightEye: NormalizedLandmark;
+  landmarks: NormalizedLandmark[];
+}
+
 // 顔認識をする
-const detectFaces = (canvas: HTMLCanvasElement) => {
+const detectFaces = (canvas: HTMLCanvasElement): FaceInfo[] => {
   try {
     // 1フレームに1回顔検出を実行（パフォーマンス最適化）
     frameCount++;
@@ -231,7 +238,9 @@ function App() {
 
       if (faceInfo.length !== oldFaceCount && now < faceDetectTime + 500) {
         // 急に顔の数が変わったときは、しばらく古い情報を信用する
-        faceInfo = oldFaceInfo;
+        if (oldFaceInfo !== null) {
+          faceInfo = oldFaceInfo;
+        }
       } else {
         // 顔の個数が同じか、時間が経ったら新しい情報を信用する
         oldFaceInfo = faceInfo;
@@ -473,7 +482,7 @@ function App() {
       console.log(`Volume: ${volumeType}`);
 
       // 音量ボタンでシャッターを切るなど
-      canvasWithCamera.current?.takePhoto();
+      canvasWithCamera.current?.takePhoto?.();
     };
 
     // イベントリスナーの登録
@@ -489,7 +498,7 @@ function App() {
     // Android側から呼ばれるグローバル関数を定義
     if ((window as any).onPhysicalVolumeButton) {
       (window as any).onPhysicalVolumeButton = () => {
-        canvasWithCamera.current?.takePhoto();
+        canvasWithCamera.current?.takePhoto?.();
       };
     }
     // コンポーネントがアンマウントされる時にクリーンアップ
@@ -507,19 +516,19 @@ function App() {
       case ';': // (日本語キーボード対応用)
         if (!event.ctrlKey && !event.altKey) { // CtrlキーやAltキーが押されていない？
           event.preventDefault();
-          canvasWithCamera.current?.zoomIn(); // ズームイン
+          canvasWithCamera.current?.zoomIn?.(); // ズームイン
         }
         break;
       case '-': // ズームアウト
         if (!event.ctrlKey && !event.altKey) { // CtrlキーやAltキーが押されていない？
           event.preventDefault();
-          canvasWithCamera.current?.zoomOut(); // ズームアウト
+          canvasWithCamera.current?.zoomOut?.(); // ズームアウト
         }
         break;
       case ' ': // スペース キー
         if (!event.ctrlKey && !event.altKey) { // CtrlキーやAltキーが押されていない？
           event.preventDefault();
-          canvasWithCamera.current?.takePhoto(); // 写真撮影
+          canvasWithCamera.current?.takePhoto?.(); // 写真撮影
         }
         break;
       case 'Enter': // Enterキー
