@@ -618,7 +618,8 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     const videoReady = video && video.readyState === video.HAVE_ENOUGH_DATA;
     const dummyReady = dummyImageRef.current && dummyImageRef.current.complete;
 
-    if (!canvas || !src || (!videoReady && !dummyReady) || srcWidth <= 0 || srcHeight <= 0) return;
+    if (!canvas || !src || (!videoReady && !dummyReady) || srcWidth <= 0 || srcHeight <= 0)
+      return;
 
     // キャンバスをビデオのサイズに合わせる
     if (canvas.width !== srcWidth || canvas.height !== srcHeight) {
@@ -683,6 +684,15 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
 
     try {
       const canvas = document.createElement("canvas"); // キャンバス作成
+
+      const { src, srcWidth, srcHeight } = getSourceInfo();
+      if (!src || srcWidth <= 0 || srcHeight <= 0) {
+        console.error("Source not ready");
+        return;
+      }
+      canvas.width = srcWidth;
+      canvas.height = srcHeight;
+
       drawInner(canvas, false); // 反転なしで描画
 
       const extension = photoFormatToExtension(photoFormat);
