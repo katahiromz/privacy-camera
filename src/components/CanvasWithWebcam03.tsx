@@ -2,7 +2,7 @@
 // Author: katahiromz
 // License: MIT
 import React, { useRef, useState, useCallback, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
-import Webcam03, { FacingMode } from './Webcam03';
+import Webcam03, { FacingMode, WebcamCanvasHandle } from './Webcam03';
 import Webcam03Controls from './Webcam03Controls';
 import { PermissionManager, PermissionStatusValue } from '../libs/PermissionManager';
 import { isAndroidApp, clamp, generateFileName, playSound, photoFormatToExtension, videoFormatToExtension,
@@ -66,6 +66,8 @@ export interface ImageProcessData {
   currentZoom: number,
   offset: { x: number, y: number },
   showCodes: boolean,
+  showCodeReader?: boolean,
+  qrResultsRef?: React.MutableRefObject<QRResult[]>,
 };
 
 // CanvasWithWebcam03のprops
@@ -83,7 +85,8 @@ interface CanvasWithWebcam03Props {
   photoFormat?: "image/png" | "image/webp" | "image/jpeg";
   photoQuality?: number;
   recordingFormat?: "video/webm" | "video/mp4";
-  downloadFile?: (blob: Blob, fileName: string, mimeType: string, type: string) => void;
+  downloadFile?: ((blob: Blob, fileName: string, mimeType: string, type: string) => void) | null;
+  saveFile?: ((blob: Blob, fileName: string, mimeType: string, type: string) => void) | null;
   eventTarget?: HTMLElement;
   showControls?: boolean;
   showRecordingTime?: boolean;
@@ -97,7 +100,7 @@ interface CanvasWithWebcam03Props {
   dummyImageSrc?: string;
   width?: string;
   height?: string;
-  qrResultsRef: object;
+  qrResultsRef: React.MutableRefObject<QRResult[]>;
 };
 
 // カメラ付きキャンバスのハンドル
@@ -196,11 +199,15 @@ export const onDefaultImageProcess = async (data: ImageProcessData) => {
       lastScanTime = now;
       // 非同期で実行し、結果が得られたら qrResults を更新する
       CodeReader.scanMultiple(canvas).then(results => {
-        qrResultsRef.current = results;
+        if (qrResultsRef) {
+          qrResultsRef.current = results;
+        }
       });
     }
 
-    CodeReader.drawAllBoxes(ctx, qrResultsRef.current, minxy);
+    if (qrResultsRef) {
+      CodeReader.drawAllBoxes(ctx, qrResultsRef.current, minxy);
+    }
   }
 
   if (SHOW_SHAPES && width > 2 && height > 2) { // ちょっと図形を描いてみるか？
@@ -267,10 +274,10 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   ref
 ) => {
   const { t } = useTranslation(); // 翻訳用
-  const webcamRef = useRef(null); // Webcam03への参照
-  const canvasRef = useRef(null); // キャンバスへの参照
-  const controlsRef = useRef(null); // コントロール パネル (Webcam03Controls)への参照
-  const animationRef = useRef(null); // アニメーションフレーム要求への参照
+  const webcamRef = useRef<WebcamCanvasHandle | null>(null); // Webcam03への参照
+  const canvasRef = useRef<HTMLCanvasElement | null>(null); // キャンバスへの参照
+  const controlsRef = useRef<HTMLDivElement | null>(null); // コントロール パネル (Webcam03Controls)への参照
+  const animationRef = useRef<number | null>(null); // アニメーションフレーム要求への参照
   const dummyImageRef = useRef<HTMLImageElement | null>(null); // ダミー画像への参照
   const mediaRecorderRef = useRef<MediaRecorder | null>(null); // メディア レコーダー
   const chunksRef = useRef<Blob[]>([]); // 録画用のchunkデータ
@@ -297,14 +304,14 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
   const isMirroredRef = useRef<boolean>(isMirrored); // 鏡像反転の監視用
   const zoomTimerRef = useRef<NodeJS.Timeout | null>(null); // ズームタイマー参照
   const zoomTimerRef2 = useRef<NodeJS.Timeout | null>(null); // ズームタイマー参照
-  const recordingTimerRef = useRef<NodeJS.Timeout | null>([]); // 録画タイマー
-  const recordingStartTimeRef = useRef<NodeJS.Timeout | null>([]); // 録画開始時の時刻
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null); // 録画タイマー
+  const recordingStartTimeRef = useRef<number | null>(null); // 録画開始時の時刻
   const [showZoomInfo, setShowZoomInfo] = useState(false); // ズーム倍率を表示するか？
   const lastTapTimerRef = useRef<number | null>(null); // 最後のタップ時刻
   const codeReaderOnRef = useRef(false); // コードリーダーのON/OFF
   const [isCodeReaderON, setIsCodeReaderON] = useState(false); // コードリーダがONか？
   const [selectedQR, setSelectedQR] = useState<string | null>(null); // 選択中のQRコードの文字列
-  const qrResultsRef = useRef([]); // QRコード読み込みの結果
+  const qrResultsRef = useRef<QRResult[]>([]); // QRコード読み込みの結果
   const [isPaused, setIsPaused] = useState(false); // 映像を一時停止中か？
   const [isWasmReady, setIsWasmReady] = useState(false);
   const lastDrawTimeRef = useRef(0);
@@ -649,14 +656,14 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
 
   // アニメーションフレームを次々と描画する関数
   const draw = useCallback(() => {
-    if (!isPaused) {
+    if (!isPaused && canvasRef.current) {
       // 内部描画関数を呼ぶ
       drawInner(canvasRef.current, isMirroredRef.current && !dummyImageRef.current);
     }
 
     // 次のアニメーション フレームを要求
     animationRef.current = requestAnimationFrame(draw);
-  }, [isPaused]);
+  }, [isPaused, drawInner]);
 
   // アニメーション フレームを起動・終了
   useEffect(() => {
@@ -685,11 +692,13 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     try {
       const extension = photoFormatToExtension(photoFormat);
       const fileName = generateFileName(t('camera_text_photo') + '_', extension);
-      canvasRef.current.toBlob((blob) => {
-        if (downloadFile)
-          downloadFile(blob, fileName, blob.type, 'photo');
-        else
-          saveFile(blob, fileName, blob.type, 'photo');
+      canvasRef.current.toBlob((blob: Blob | null) => {
+        if (blob) {
+          if (downloadFile)
+            downloadFile(blob, fileName, blob.type, 'photo');
+          else if (saveFile)
+            saveFile(blob, fileName, blob.type, 'photo');
+        }
         console.log("Photo taken");
       }, photoFormat, photoQuality);
     } catch (err) {
@@ -750,7 +759,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
       // 画面ONを解除する。
       if (window.android) {
         try {
-          window.android.onStopRecording();
+          window.android.onStopRecording?.();
         } catch (err) {
           ;
         }
@@ -763,13 +772,18 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
       }
 
       const blob = new Blob(chunksRef.current, { type: recordingFormat });
-      const duration = Date.now() - recordingStartTimeRef.current; // 経過時間を計算
+      const startTime = recordingStartTimeRef.current;
+      if (startTime === null) {
+        console.error('Recording start time is null');
+        return;
+      }
+      const duration = Date.now() - startTime; // 経過時間を計算
       const fixedBlob = (ENABLE_FIX_WEBM_DURATION && recordingFormat.indexOf('webm') !== -1) ? (await fixWebmDuration(blob, duration)) : blob;
       const extension = videoFormatToExtension(recordingFormat);
       const fileName = generateFileName(t('camera_text_video') + '_', extension);
       if (downloadFile)
         downloadFile(fixedBlob, fileName, blob.type, 'video');
-      else
+      else if (saveFile)
         saveFile(fixedBlob, fileName, blob.type, 'video');
     };
 
@@ -787,7 +801,7 @@ const CanvasWithWebcam03 = forwardRef<CanvasWithWebcam03Handle, CanvasWithWebcam
     // 画面ONをキープする
     if (window.android) {
       try {
-        window.android.onStartRecording();
+        window.android.onStartRecording?.();
       } catch (err) {
         ;
       }
