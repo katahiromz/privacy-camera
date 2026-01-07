@@ -16,7 +16,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "include": ["src"],
     "jsx": "react-jsx"
-  }
+  },
+  "include": ["src"]
 }

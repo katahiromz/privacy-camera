@@ -117,11 +117,13 @@ export const playSound = (audio: HTMLAudioElement | null) => {
     audio?.addEventListener('ended', (event) => { // 再生終了時
       // 可能ならばシステム音量を元に戻す
       if (isAndroidApp)
-        window.android.onEndShutterSound();
+        window.android?.onEndShutterSound();
     }, { once: true });
     // 再生位置をリセットしてから再生
-    audio.currentTime = 0;
-    audio.play();
+    if (audio) {
+      audio.currentTime = 0;
+      audio.play();
+    }
   } catch (error) {
     console.warn('sound playback failed:', error);
   }
@@ -152,15 +154,19 @@ export const saveMediaEx = (blob: Blob, fileName: string, mimeType: string, type
   reader.onloadend = () => {
     console.log("reader.onloadend");
     const result = reader.result;
-    const base64data = result.substr(result.indexOf('base64,') + 7);
+    if (!result || typeof result !== 'string') {
+      console.error('Failed to read file as data URL');
+      return;
+    }
+    const base64data = result.substring(result.indexOf('base64,') + 7);
     // Kotlin側の関数を呼び出す
     try {
-      window.android.saveMediaToGallery(base64data, fileName, mimeType, type);
+      window.android?.saveMediaToGallery(base64data, fileName, mimeType, type);
       console.log(`Saved ${type}:`, fileName);
     } catch (error) {
       console.assert(false);
       console.error('android インタフェース呼び出しエラー:', error);
-      saveMedia(blob, fileName);
+      saveMedia(blob, fileName, mimeType, type);
     }
   };
   reader.readAsDataURL(blob); // BlobをBase64に変換
@@ -199,7 +205,11 @@ export const polyfillGetUserMedia = () => {
 
       // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
       return new Promise(function(resolve, reject) {
-        getUserMedia.call(navigator, constraints, resolve, reject);
+        if (constraints) {
+          getUserMedia.call(navigator, constraints, resolve, reject);
+        } else {
+          reject(new Error("getUserMedia requires constraints"));
+        }
       });
     };
   }
@@ -252,7 +262,7 @@ export const isPointInPolygon = (point: {x: number, y: number}, polygon: {x: num
 };
 
 // タッチ距離を計算
-export const getDistance = (touches: React.TouchList | TouchList) => {
+export const getDistance = (touches: TouchList) => {
   const dx = touches[0].clientX - touches[1].clientX;
   const dy = touches[0].clientY - touches[1].clientY;
   return Math.sqrt(dx * dx + dy * dy);
@@ -306,7 +316,7 @@ export const truncateLongString = (text: string, maxLength = 100) => {
  * @param {number} y1 - 終点 (P1) のY座標。
  * @param {boolean} [debugging=false] - trueの場合、計算された4つの頂点を黄色の点で描画する。
  */
-export const drawLineAsPolygon = (ctx, x0, y0, x1, y1) => {
+export const drawLineAsPolygon = (ctx: CanvasRenderingContext2D, x0: number, y0: number, x1: number, y1: number) => {
   const lineWidth = ctx.lineWidth;
   const halfWidth = lineWidth / 2;
   // 1. 方向ベクトルの計算
