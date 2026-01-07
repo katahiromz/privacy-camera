@@ -457,7 +457,7 @@ function App() {
     setTimeout(() => {
       setShowSettings(false);
       setIsClosingSettings(false);
-    }, 300); // CSSアニメーション時間と合わせる
+    }, 200); // CSSアニメーション時間と合わせる
   };
 
   useEffect(() => {

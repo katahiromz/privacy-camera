@@ -14,7 +14,7 @@
   overflow-y: auto;
 
   /* アニメーション追加 */
-  animation: slideInFromRight 0.3s ease-out;
+  animation: slideInFromRight 0.2s ease-out;
 }
 
 /* スライドイン（右から） */
@@ -31,7 +31,7 @@
 
 /* スライドアウト（右へ） */
 .settings-page.closing {
-  animation: slideOutToRight 0.3s ease-out forwards;
+  animation: slideOutToRight 0.2s ease-out forwards;
 }
 
 @keyframes slideOutToRight {
