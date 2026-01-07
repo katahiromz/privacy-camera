@@ -21,9 +21,9 @@
   background-color: #ccc;
 }
 
-.setting-version-info {
+.setting-version-info p {
   text-align: center;
-  margin: 25px;
+  margin: 15px;
 }
 
 .settings-content hr {

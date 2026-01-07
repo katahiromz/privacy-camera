@@ -41,10 +41,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ privacyMode, onPrivacyModeC
       </div>
       <div className="settings-content">
         <div className="setting-version-info">
-          {t('camera_app_info')}
-        </div>
-        <div className="setting-version-info">
-          <img src={`${BASE_URL}/pwa-120x120.png`} alt="[Logo]" />
+          <p>
+            {t('camera_app_info')}
+          </p>
+          <p>
+            <img src={`${BASE_URL}/pwa-120x120.png`} alt="[Logo]" />
+          </p>
         </div>
         <hr />
         <div className="setting-item">
