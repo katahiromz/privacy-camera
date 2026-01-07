@@ -10,8 +10,8 @@ android {
         applicationId "com.katahiromz.privacy_camera"
         minSdkVersion 28
         targetSdkVersion 35
-        versionCode 104
-        versionName "1.0.4"
+        versionCode 105
+        versionName "1.0.5"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
