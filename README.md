@@ -11,9 +11,9 @@ Facial recognition helps protect your privacy.
 * When you first launch the app, it will request camera and microphone permissions. Please allow them.
 * The camera will automatically launch and any faces it recognizes will be overlaid with eye censored lines, blurring, or blacking out.
 * The three buttons at the bottom have the following meanings:
-- Camera Switch Button: Switches between the front and rear cameras.
-- Photo Button: Takes a photo.
-- Record Button: Starts or stops recording.
+    - Camera Switch Button: Switches between the front and rear cameras.
+    - Photo Button: Takes a photo.
+    - Record Button: Starts or stops recording.
 * The gear in the upper left is the settings button. You can configure the app.
 
 ## Disclaimer
