@@ -135,7 +135,7 @@ function App() {
   const { t } = useTranslation(); // 翻訳用
   const canvasWithCamera = useRef<CanvasWithWebcam03>(null);
   const qrResultsRef = useRef([]); // QRコード読み取り結果（CanvasWithWebcam03に渡すため）
-  
+
   // プライバシーモードの状態管理
   const [privacyMode, setPrivacyMode] = useState<PrivacyMode>(() => {
     try {
@@ -155,7 +155,7 @@ function App() {
 
   // 設定ページの表示状態
   const [showSettings, setShowSettings] = useState(false);
-  
+
   // プライバシーモード変更時の処理
   const handlePrivacyModeChange = (mode: PrivacyMode) => {
     setPrivacyMode(mode);
@@ -279,21 +279,21 @@ function App() {
             maxX = Math.max(maxX, lx);
             maxY = Math.max(maxY, ly);
           }
-          
+
           // 余白を追加
           const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
           minX = Math.max(0, minX - padding);
           minY = Math.max(0, minY - padding);
           maxX = Math.min(width, maxX + padding);
           maxY = Math.min(height, maxY + padding);
-          
+
           const faceWidth = maxX - minX;
           const faceHeight = maxY - minY;
-          
+
           // 一時キャンバスを作成または再利用（メモリ効率のため、大きすぎる場合は再作成）
           const MAX_TEMP_CANVAS_SIZE = 2000; // 最大サイズ（ピクセル）
-          if (!tempBlurCanvas || 
-              tempBlurCanvas.width < faceWidth || 
+          if (!tempBlurCanvas ||
+              tempBlurCanvas.width < faceWidth ||
               tempBlurCanvas.height < faceHeight ||
               (tempBlurCanvas.width > MAX_TEMP_CANVAS_SIZE && faceWidth < MAX_TEMP_CANVAS_SIZE / 2) ||
               (tempBlurCanvas.height > MAX_TEMP_CANVAS_SIZE && faceHeight < MAX_TEMP_CANVAS_SIZE / 2)) {
@@ -302,13 +302,13 @@ function App() {
             tempBlurCanvas.height = Math.ceil(Math.max(faceHeight, 100));
           }
           const tempCtx = tempBlurCanvas.getContext('2d');
-          
+
           if (tempCtx) {
             // 一時キャンバスをクリア
             tempCtx.clearRect(0, 0, tempBlurCanvas.width, tempBlurCanvas.height);
             // 顔領域をコピー
             tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
-            
+
             // ぼかしフィルタを適用
             const blurRadius = Math.ceil(faceWidth * 0.08);
             offscreenCtx.filter = `blur(${blurRadius}px)`;
@@ -327,20 +327,20 @@ function App() {
             maxX = Math.max(maxX, lx);
             maxY = Math.max(maxY, ly);
           }
-          
+
           // 余白を追加（faceBlurと同じパディング）
           const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
           minX = Math.max(0, minX - padding);
           minY = Math.max(0, minY - padding);
           maxX = Math.min(width, maxX + padding);
           maxY = Math.min(height, maxY + padding);
-          
+
           // 楕円の中心座標とサイズを計算
           const centerX = (minX + maxX) / 2;
           const centerY = (minY + maxY) / 2;
           const radiusX = (maxX - minX) / 2;
           const radiusY = (maxY - minY) / 2;
-          
+
           // 顔の角度を計算（目の位置から）
           const dx = rightEyeX - leftEyeX;
           const dy = rightEyeY - leftEyeY;
@@ -382,43 +382,43 @@ function App() {
             maxX = Math.max(maxX, lx);
             maxY = Math.max(maxY, ly);
           }
-          
+
           // 余白を追加
           const padding = (maxX - minX) * FACE_PADDING_COEFFICIENT;
           minX = Math.max(0, minX - padding);
           minY = Math.max(0, minY - padding);
           maxX = Math.min(width, maxX + padding);
           maxY = Math.min(height, maxY + padding);
-          
+
           const faceWidth = maxX - minX;
           const faceHeight = maxY - minY;
-          
+
           // モザイクのブロックサイズ
-          const blockSize = Math.max(4, Math.floor(faceWidth * 0.05));
-          
+          const blockSize = Math.max(4, Math.floor(faceWidth * 0.08));
+
           // 一時キャンバスを作成または再利用
-          if (!tempBlurCanvas || 
-              tempBlurCanvas.width < faceWidth || 
+          if (!tempBlurCanvas ||
+              tempBlurCanvas.width < faceWidth ||
               tempBlurCanvas.height < faceHeight) {
             tempBlurCanvas = document.createElement('canvas');
             tempBlurCanvas.width = Math.ceil(Math.max(faceWidth, 100));
             tempBlurCanvas.height = Math.ceil(Math.max(faceHeight, 100));
           }
           const tempCtx = tempBlurCanvas.getContext('2d');
-          
+
           if (tempCtx) {
             // スムージングを無効化
             tempCtx.imageSmoothingEnabled = false;
-            
+
             // 顔領域をコピー
             tempCtx.clearRect(0, 0, tempBlurCanvas.width, tempBlurCanvas.height);
             tempCtx.drawImage(offscreenCanvas, minX, minY, faceWidth, faceHeight, 0, 0, faceWidth, faceHeight);
-            
+
             // 低解像度にスケールダウン
             const smallWidth = Math.max(1, Math.floor(faceWidth / blockSize));
             const smallHeight = Math.max(1, Math.floor(faceHeight / blockSize));
             tempCtx.drawImage(tempBlurCanvas, 0, 0, faceWidth, faceHeight, 0, 0, smallWidth, smallHeight);
-            
+
             // 元のサイズにスケールアップ（モザイク効果）
             offscreenCtx.imageSmoothingEnabled = false;
             offscreenCtx.drawImage(tempBlurCanvas, 0, 0, smallWidth, smallHeight, minX, minY, faceWidth, faceHeight);
