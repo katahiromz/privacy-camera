@@ -15,7 +15,7 @@ interface SettingsPageProps {
   privacyMode: PrivacyMode;
   onPrivacyModeChange: (mode: PrivacyMode) => void;
   onBack: () => void;
-  isClosing?: false;
+  isClosing?: boolean;
 }
 
 const SettingsPage: React.FC<SettingsPageProps> = ({

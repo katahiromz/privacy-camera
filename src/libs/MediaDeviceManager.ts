@@ -37,7 +37,7 @@ export class MediaDeviceManager {
   /**
    * デバイスの背面・前面の判定
    */
-  async getDeviceFacingMode(device: MediaDeviceInfo): 'environment' | 'user' | 'unknown' {
+  async getDeviceFacingMode(device: MediaDeviceInfo): Promise<'environment' | 'user' | 'unknown'> {
     const stream = await navigator.mediaDevices.getUserMedia({
       video: { deviceId: { exact: device.deviceId } }
     });

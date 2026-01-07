@@ -2,7 +2,7 @@
 // Author: katahiromz
 // License: MIT
 
-import { readBarcodesFromImageData, type ReaderOptions } from 'zxing-wasm/reader';
+import { readBarcodesFromImageData, type ReaderOptions, type ReadResult } from 'zxing-wasm/reader';
 
 export interface QRResult {
   data: string;
@@ -66,7 +66,7 @@ export class CodeReader {
       });
 
       // 結果を変換
-      return results.map(result => {
+      return results.map((result: ReadResult) => {
         // zxing-wasmの座標を取得
         const position = result.position;
         const points = [

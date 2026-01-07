@@ -50,11 +50,11 @@ i18n
     },
   });
 
-i18n.on('languageChanged', (lng) => {
+i18n.on('languageChanged', (lng: string) => {
   console.log('現在の言語:', lng);
 });
 
-i18n.on('failedLoading', (lng, ns, msg) => {
+i18n.on('failedLoading', (lng: string, ns: string, msg: string) => {
   console.error('読み込み失敗:', lng, ns, msg);
 });
 

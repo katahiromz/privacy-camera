@@ -29,7 +29,7 @@ interface WebcamProps {
   style?: React.CSSProperties;
 }
 
-interface WebcamCanvasHandle {
+export interface WebcamCanvasHandle {
   getScreenshot: (dimensions?: ScreenshotDimensions) => string | null;
   getCanvas: (dimensions?: ScreenshotDimensions) => HTMLCanvasElement | null;
   getRealFacingMode: () => FacingMode | null;

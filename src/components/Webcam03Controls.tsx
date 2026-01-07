@@ -26,6 +26,8 @@ interface Camera03ControlsProps {
   showTakePhoto: boolean; // 写真撮影ボタンを表示するか？
   showRecording: boolean; // 録画開始・録画停止ボタンを表示するか？
   showCameraSwitch: boolean; // カメラ切り替えボタンを表示するか？
+  showCodeReader?: boolean; // コードリーダーを表示するか？
+  showConfig?: boolean; // 設定ボタンを表示するか？
   toggleCodeReader: () => void; // コードリーダーを切り替える
   showCodes: boolean; // コードを表示するか？
   enableCodeReader: boolean; // コードリーダーを有効にするか？
