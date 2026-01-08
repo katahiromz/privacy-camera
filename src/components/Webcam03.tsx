@@ -245,7 +245,7 @@ const Webcam03 = forwardRef<WebcamCanvasHandle, WebcamProps>(
       <>
         <video
           autoPlay
-          muted={!audio}
+          muted
           playsInline
           ref={videoRef}
           style={videoStyle}

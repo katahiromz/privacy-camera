@@ -49,7 +49,7 @@ let frameCount = 0; // フレーム カウンタ
 let offscreenCanvas: HTMLCanvasElement | null = null; // オフスクリーンキャンバス
 let tempBlurCanvas: HTMLCanvasElement | null = null; // ぼかし用の一時キャンバス
 const USE_FACE_DETECTION_LOCAL_FILE = true; // ローカルファイルを使って顔認識するか？
-const MIN_DETECTION_CONFIDENCE = 0.3;
+const MIN_DETECTION_CONFIDENCE = 0.25;
 const MIN_FACE_LANDMARKS = 264; // Face Landmarkerの最小ランドマーク数（263まで使用するため）
 const LEFT_EYE_LEFT_CORNER = 33; // 左目の左端のランドマークインデックス
 const RIGHT_EYE_RIGHT_CORNER = 263; // 右目の右端のランドマークインデックス
@@ -77,6 +77,8 @@ const initFaceDetection = async () => {
       runningMode: "VIDEO",
       numFaces: 16,
       minFaceDetectionConfidence: MIN_DETECTION_CONFIDENCE,
+      minFacePresenceConfidence: 0.25, // 存在確認も下げる
+      minTrackingConfidence: 0.25,     // 追跡も維持しやすくする
       outputFaceBlendshapes: false,
       outputFacialTransformationMatrixes: false,
     });
