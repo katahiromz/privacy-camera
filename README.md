@@ -14,7 +14,7 @@ Facial recognition helps protect your privacy.
     - Camera Switch Button: Switches between the front and rear cameras.
     - Photo Button: Takes a photo.
     - Record Button: Starts or stops recording.
-* The gear in the upper left is the settings button. You can configure the app.
+* The gear in the upper right is the settings button. You can configure the app.
 
 ## Disclaimer
 
