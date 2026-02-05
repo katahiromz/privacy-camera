@@ -281,12 +281,10 @@ object TopSnackbar {
         })
 
         view.setOnTouchListener { v, event ->
-            // Check if touch is within a clickable child view (e.g., action button)
-            if (isTouchOnClickableChild(v as ViewGroup, event)) {
-                // Let the child view handle the touch event normally
+            // ボタンなどの子要素がタッチを処理した場合はスワイプ処理をしない
+            if (v.onGenericMotionEvent(event)) {
                 return@setOnTouchListener false
             }
-
             // Otherwise, pass to gesture detector for swipe-to-dismiss
             gestureDetector.onTouchEvent(event)
         }
@@ -417,10 +415,7 @@ object TopSnackbar {
 
                 setOnClickListener {
                     try {
-                        // メインスレッドの処理を軽くするため、ポストして実行する
-                        it.post {
-                            action.invoke()
-                        }
+                        action.invoke()
                         dismissWithAnimation()
                     } catch (e: Exception) {
                         Timber.e(e, "Error executing TopSnackbar action")
