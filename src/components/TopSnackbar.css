@@ -1,0 +1,70 @@
+/* TopSnackbar.css --- Web top snackbar component styles
+ * Author: katahiromz
+ * License: MIT
+ */
+
+.top-snackbar {
+  position: fixed;
+  top: var(--safe-inset-top, 0px);
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  background-color: #323232;
+  color: #fff;
+  padding: 12px 8px 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  touch-action: pan-x pan-y;
+  user-select: none;
+}
+
+.top-snackbar.top-snackbar--visible {
+  transform: translateY(0);
+  opacity: 1;
+}
+
+.top-snackbar.top-snackbar--hiding {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.top-snackbar__message {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.top-snackbar__action {
+  background: none;
+  border: none;
+  color: #64b5f6;
+  font-size: 14px;
+  font-weight: bold;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.top-snackbar__action:hover {
+  opacity: 0.8;
+}
+
+.top-snackbar__close {
+  background: none;
+  border: none;
+  color: #aaa;
+  font-size: 18px;
+  padding: 8px;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.top-snackbar__close:hover {
+  color: #fff;
+}

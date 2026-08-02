@@ -4,6 +4,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
 import CanvasWithWebcam03, { ImageProcessData, CanvasWithWebcam03Handle } from './components/CanvasWithWebcam03';
 import SettingsPage, { PrivacyMode } from './components/SettingsPage';
+import TopSnackbar from './components/TopSnackbar';
 import { QRResult } from './libs/CodeReader';
 import { isAndroidApp, emulateInsets, saveMedia, saveMediaEx, polyfillGetUserMedia,
          getLocalDateTimeString, drawLineAsPolygon, cloneCanvas } from './libs/utils';
@@ -163,6 +164,15 @@ function App() {
   // 設定ページの表示状態
   const [showSettings, setShowSettings] = useState(false);
   const [isClosingSettings, setIsClosingSettings] = useState(false);
+
+  // スナックバーの状態
+  interface SnackbarState {
+    message: string;
+    actionLabel: string | null;
+    actionUrl: string | null;
+  }
+  const [snackbar, setSnackbar] = useState<SnackbarState | null>(null);
+  const snackbarUrlRef = useRef<string | null>(null);
 
   // プライバシーモード変更時の処理
   const handlePrivacyModeChange = (mode: PrivacyMode) => {
@@ -620,6 +630,45 @@ function App() {
     }
   }, [showSettings]);
 
+  // ダウンロード完了イベントを処理してスナックバーを表示する
+  useEffect(() => {
+    const handleDownloadComplete = (e: Event) => {
+      const { type, url } = (e as CustomEvent).detail as { type: 'photo' | 'video' | 'audio', url: string | null };
+      let message: string;
+      switch (type) {
+      case 'photo': message = t('camera_photo_saved'); break;
+      case 'video': message = t('camera_video_saved'); break;
+      case 'audio': message = t('camera_audio_saved'); break;
+      default:      message = t('camera_photo_saved'); break;
+      }
+      // 前のスナックバーのURLを取り消す
+      if (snackbarUrlRef.current) {
+        URL.revokeObjectURL(snackbarUrlRef.current);
+        snackbarUrlRef.current = null;
+      }
+      snackbarUrlRef.current = url;
+      setSnackbar({
+        message,
+        actionLabel: url ? t('camera_open_file') : null,
+        actionUrl: url,
+      });
+    };
+
+    window.addEventListener('DownloadComplete', handleDownloadComplete);
+    return () => {
+      window.removeEventListener('DownloadComplete', handleDownloadComplete);
+    };
+  }, [t]);
+
+  // スナックバーの非表示時にURLを取り消す
+  const handleSnackbarDismiss = useCallback(() => {
+    if (snackbarUrlRef.current) {
+      URL.revokeObjectURL(snackbarUrlRef.current);
+      snackbarUrlRef.current = null;
+    }
+    setSnackbar(null);
+  }, []);
+
   return (
     <>
       {showSettings && (
@@ -647,6 +696,14 @@ function App() {
         qrResultsRef={qrResultsRef}
         aria-label={t('camera_app')}
       />
+      {snackbar && (
+        <TopSnackbar
+          message={snackbar.message}
+          actionLabel={snackbar.actionLabel}
+          onAction={snackbar.actionUrl ? () => { window.open(snackbar.actionUrl!, '_blank', 'noopener'); } : null}
+          onDismiss={handleSnackbarDismiss}
+        />
+      )}
     </>
   );
 }

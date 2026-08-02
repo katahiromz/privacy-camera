@@ -40,5 +40,9 @@
   "black_out": "Blackout",
   "mosaic": "Mosaic",
   "back": "Back",
-  "face": "Face"
+  "face": "Face",
+  "camera_photo_saved": "Photo saved",
+  "camera_video_saved": "Video saved",
+  "camera_audio_saved": "Audio saved",
+  "camera_open_file": "Open"
 }

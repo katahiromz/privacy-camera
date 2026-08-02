@@ -136,6 +136,11 @@ export const clamp = (minValue: number, value: number, maxValue: number) => {
   return Math.max(minValue, Math.min(value, maxValue));
 };
 
+// ダウンロード完了イベントを送出する
+export const dispatchDownloadComplete = (type: 'video' | 'photo' | 'audio', url: string | null = null) => {
+  window.dispatchEvent(new CustomEvent('DownloadComplete', { detail: { type, url } }));
+};
+
 // ファイルを保存する
 export const saveMedia = (blob: Blob, fileName: string, mimeType: string, type: 'video' | 'photo' | 'audio') => {
   const url = URL.createObjectURL(blob);
@@ -143,7 +148,8 @@ export const saveMedia = (blob: Blob, fileName: string, mimeType: string, type: 
   link.download = fileName;
   link.href = url;
   link.click();
-  URL.revokeObjectURL(url);
+  // ダウンロード完了イベントを送出する（URLはスナックバーが破棄するまで有効）
+  dispatchDownloadComplete(type, url);
 };
 
 // ファイルを保存する(拡張版)
@@ -167,7 +173,10 @@ export const saveMediaEx = (blob: Blob, fileName: string, mimeType: string, type
       console.assert(false);
       console.error('android インタフェース呼び出しエラー:', error);
       saveMedia(blob, fileName, mimeType, type);
+      return;
     }
+    // ダウンロード完了イベントを送出する（Android側はURLなし）
+    dispatchDownloadComplete(type, null);
   };
   reader.readAsDataURL(blob); // BlobをBase64に変換
 };
