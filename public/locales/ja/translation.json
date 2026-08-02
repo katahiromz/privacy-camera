@@ -40,5 +40,9 @@
   "black_out": "黒塗り",
   "mosaic": "モザイク",
   "back": "戻る",
-  "face": "顔"
+  "face": "顔",
+  "camera_photo_saved": "写真を保存しました",
+  "camera_video_saved": "動画を保存しました",
+  "camera_audio_saved": "音声を保存しました",
+  "camera_open_file": "開く"
 }
